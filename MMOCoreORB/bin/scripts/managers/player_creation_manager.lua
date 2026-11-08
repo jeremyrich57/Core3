@@ -8,6 +8,16 @@ startingBank = 1000
 --startingBank = 100000
 --How many skill points a new characters start with
 skillPoints = 250
+--Starting attributes (HAM) of new characters are rescaled proportionally into this range.
+--The lowest stat any species/profession combination can start with maps to attributeRangeMin,
+--the highest to attributeRangeMax, and results are rounded to the nearest attributeRounding.
+--Stat migration limits are rescaled the same way. Only affects characters created after the change.
+--Set attributeRangeMin and attributeRangeMax to 0 to use the client's original values.
+--NOTE: while rescaling is on, stat migration is disabled, because the client's own attribute_limits.iff
+--still has the original limits. TODO: ship a rescaled attribute_limits.iff via the launcher, then re-enable.
+attributeRangeMin = 1600
+attributeRangeMax = 2400
+attributeRounding = 100
 
 professions = {
 	"combat_brawler",

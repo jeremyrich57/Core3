@@ -37,6 +37,11 @@ public:
 			return GENERALERROR;
 		}
 
+		if (!PlayerCreationManager::instance()->isStatMigrationEnabled()) {
+			creature->sendSystemMessage("Stat migration is not available on this server.");
+			return SUCCESS;
+		}
+
 		auto ghost = creature->getPlayerObject();
 
 		if (ghost == nullptr) {
