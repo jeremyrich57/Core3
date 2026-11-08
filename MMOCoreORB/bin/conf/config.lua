@@ -248,6 +248,11 @@ Core3 = {
 		MaxStunLayerResist = 40, -- Cap on stun resist granted by a stun layer (stun is vulnerable on all armor)
 	},
 
+	PlayerCreationManager = {
+		MaxCharactersPerGalaxy = 10, -- Characters allowed per account on this galaxy
+		CharacterCreationCooldown = 60, -- Minutes an account must wait between character creations (staff exempt); 0 = no limit
+	},
+
 	------Extra Config ------
 	MaxNavMeshJobs = 6,
 	MaxAuctionSearchJobs = 1,
