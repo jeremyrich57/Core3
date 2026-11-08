@@ -411,8 +411,12 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 	auto client = callback->getClient();
 	auto maxchars = ConfigManager::instance()->getInt("Core3.PlayerCreationManager.MaxCharactersPerGalaxy", 10);
 
+	// Minutes a non-staff account must wait between character creations; 0 disables the limit.
+	const int creationCooldownMinutes = ConfigManager::instance()->getInt("Core3.PlayerCreationManager.CharacterCreationCooldown", 60);
+	const int64 creationCooldownMs = (int64) creationCooldownMinutes * 60 * 1000;
+
 	if (client->getCharacterCount(zoneServer.get()->getGalaxyID()) >= maxchars) {
-		ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are limited to 10 characters per galaxy.", 0x0);
+		ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are limited to " + String::valueOf(maxchars) + " characters per galaxy.", 0x0);
 		client->sendMessage(errMsg);
 
 		return false;
@@ -540,7 +544,7 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 					playerManager->updatePermissionLevel(playerCreature, accountPermissionLevel);
 				}
 
-				if (accountPermissionLevel < 9) {
+				if (accountPermissionLevel < 9 && creationCooldownMinutes > 0) {
 #ifndef WITH_SWGREALMS_API
 					try {
 						StringBuffer query;
@@ -555,8 +559,8 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 
 							Time timeVal(sec);
 
-							if (timeVal.miliDifference() < 3600000) {
-								ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character per hour. Repeat attempts prior to 1 hour elapsing will reset the timer.", 0x0);
+							if (timeVal.miliDifference() < creationCooldownMs) {
+								ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character every " + String::valueOf(creationCooldownMinutes) + " minutes. Repeat attempts before the timer elapses will reset it.", 0x0);
 								client->sendMessage(errMsg);
 
 								playerCreature->destroyPlayerCreatureFromDatabase(true);
@@ -577,8 +581,8 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 					if (lastCreatedCharacter.containsKey(accID)) {
 						Time lastCreatedTime = lastCreatedCharacter.get(accID);
 
-						if (lastCreatedTime.miliDifference() < 3600000) {
-							ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character per hour. Repeat attempts prior to 1 hour elapsing will reset the timer.", 0x0);
+						if (lastCreatedTime.miliDifference() < creationCooldownMs) {
+							ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character every " + String::valueOf(creationCooldownMinutes) + " minutes. Repeat attempts before the timer elapses will reset it.", 0x0);
 							client->sendMessage(errMsg);
 
 							playerCreature->destroyPlayerCreatureFromDatabase(true);
@@ -714,12 +718,14 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 	//Join auction chat room
 	ghost->addChatRoom(chatManager->getAuctionRoom()->getRoomID());
 
-	ManagedReference<SuiMessageBox*> box = new SuiMessageBox(playerCreature, SuiWindowType::NONE);
-	box->setPromptTitle("PLEASE NOTE");
-	box->setPromptText("You are limited to creating one character per hour. Attempting to create another character or deleting your character before the 1 hour timer expires will reset the timer.");
+	if (creationCooldownMinutes > 0) {
+		ManagedReference<SuiMessageBox*> box = new SuiMessageBox(playerCreature, SuiWindowType::NONE);
+		box->setPromptTitle("PLEASE NOTE");
+		box->setPromptText("You are limited to creating one character every " + String::valueOf(creationCooldownMinutes) + " minutes. Attempting to create another character or deleting your character before the timer expires will reset the timer.");
 
-	ghost->addSuiBox(box);
-	playerCreature->sendMessage(box->generateMessage());
+		ghost->addSuiBox(box);
+		playerCreature->sendMessage(box->generateMessage());
+	}
 
 	return true;
 }
