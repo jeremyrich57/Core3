@@ -7,6 +7,7 @@
 
 #include "server/zone/objects/player/sessions/MigrateStatsSession.h"
 #include "server/zone/packets/player/StatMigrationTargetsMessage.h"
+#include "server/zone/managers/player/creation/PlayerCreationManager.h"
 
 class RequestStatMigrationDataCommand : public QueueCommand {
 public:
@@ -23,6 +24,11 @@ public:
 
 		if (!checkInvalidLocomotions(creature))
 			return INVALIDLOCOMOTION;
+
+		if (!PlayerCreationManager::instance()->isStatMigrationEnabled()) {
+			creature->sendSystemMessage("Stat migration is not available on this server.");
+			return SUCCESS;
+		}
 
 		ManagedReference<Facade*> facade = creature->getActiveSession(SessionFacadeType::MIGRATESTATS);
 		ManagedReference<MigrateStatsSession*> session = dynamic_cast<MigrateStatsSession*>(facade.get());

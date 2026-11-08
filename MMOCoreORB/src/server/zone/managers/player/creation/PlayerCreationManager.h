@@ -72,12 +72,27 @@ class PlayerCreationManager : public Singleton<PlayerCreationManager>, public Lo
 	int startingBank;
 	int skillPoints;
 
+	// Starting attribute rescaling (configured in player_creation_manager.lua).
+	int attributeRangeMin;
+	int attributeRangeMax;
+	int attributeRounding;
+
+	// Lowest/highest starting attribute across all species/profession combinations,
+	// computed from the client datatables.
+	int sourceAttributeMin;
+	int sourceAttributeMax;
+
 	bool freeGodMode;
 
 	mutable HashTable<uint32, Time> lastCreatedCharacter;
 	mutable Mutex charCountMutex;
 
 	void loadLuaConfig();
+	void loadAttributeSourceRange();
+
+	int rescaleAttribute(int value) const;
+	int rescaleAttributeTotal(int total) const;
+
 	void loadRacialCreationData();
 	void loadDefaultCharacterItems();
 	void loadProfessionDefaultsInfo();
@@ -100,6 +115,18 @@ class PlayerCreationManager : public Singleton<PlayerCreationManager>, public Lo
 public:
 	PlayerCreationManager();
 	~PlayerCreationManager();
+
+	bool isAttributeRescaleEnabled() const;
+
+	/**
+	 * Stat migration is disabled while starting attributes are rescaled: the client builds its
+	 * migration sliders from its own (unscaled) attribute_limits.iff, so its values would never
+	 * pass server validation.
+	 * TODO: re-enable once the launcher ships a patched attribute_limits.iff matching the rescale.
+	 */
+	bool isStatMigrationEnabled() const {
+		return !isAttributeRescaleEnabled();
+	}
 
 	/**
 	 * Validates the character's name.

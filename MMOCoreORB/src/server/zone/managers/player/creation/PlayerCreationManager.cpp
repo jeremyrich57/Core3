@@ -27,6 +27,8 @@
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/zone/managers/player/creation/SendJtlRecruitment.h"
 
+#include <cmath>
+
 PlayerCreationManager::PlayerCreationManager() : Logger("PlayerCreationManager") {
 	setLogging(false);
 	setGlobalLogging(false);
@@ -39,6 +41,11 @@ PlayerCreationManager::PlayerCreationManager() : Logger("PlayerCreationManager")
 
 	startingCash = 100;
 	startingBank = 1000;
+	attributeRangeMin = 0;
+	attributeRangeMax = 0;
+	attributeRounding = 1;
+	sourceAttributeMin = 0;
+	sourceAttributeMax = 0;
 
 	freeGodMode = false;
 
@@ -269,10 +276,94 @@ void PlayerCreationManager::loadLuaConfig() {
 	skillPoints = lua->getGlobalInt("skillPoints");
 	freeGodMode = lua->getGlobalByte("freeGodMode");
 
+	attributeRangeMin = lua->getGlobalInt("attributeRangeMin");
+	attributeRangeMax = lua->getGlobalInt("attributeRangeMax");
+	attributeRounding = lua->getGlobalInt("attributeRounding");
+
+	if (attributeRounding < 1) {
+		attributeRounding = 1;
+	}
+
+	loadAttributeSourceRange();
+
+	if (isAttributeRescaleEnabled()) {
+		info(true) << "Rescaling starting attributes from " << sourceAttributeMin << "-" << sourceAttributeMax
+			<< " to " << attributeRangeMin << "-" << attributeRangeMax << " (rounded to " << attributeRounding << ")";
+	}
+
 	loadLuaStartingItems(lua);
 
 	delete lua;
 	lua = nullptr;
+}
+
+void PlayerCreationManager::loadAttributeSourceRange() {
+	sourceAttributeMin = 0;
+	sourceAttributeMax = 0;
+
+	bool found = false;
+
+	for (int r = 0; r < racialCreationData.size(); ++r) {
+		const RacialCreationData* racialData = racialCreationData.elementAt(r).getValue();
+
+		if (racialData == nullptr)
+			continue;
+
+		for (int p = 0; p < professionDefaultsInfo.size(); ++p) {
+			const ProfessionDefaultsInfo* professionData = professionDefaultsInfo.elementAt(p).getValue();
+
+			if (professionData == nullptr)
+				continue;
+
+			// Skip professions with no attribute data (not selectable at creation).
+			int professionTotal = 0;
+
+			for (int i = 0; i < 9; ++i)
+				professionTotal += professionData->getAttributeMod(i);
+
+			if (professionTotal <= 0)
+				continue;
+
+			for (int i = 0; i < 9; ++i) {
+				int value = professionData->getAttributeMod(i) + racialData->getAttributeMod(i);
+
+				if (!found || value < sourceAttributeMin)
+					sourceAttributeMin = value;
+
+				if (!found || value > sourceAttributeMax)
+					sourceAttributeMax = value;
+
+				found = true;
+			}
+		}
+	}
+}
+
+bool PlayerCreationManager::isAttributeRescaleEnabled() const {
+	return attributeRangeMax > attributeRangeMin && sourceAttributeMax > sourceAttributeMin;
+}
+
+int PlayerCreationManager::rescaleAttribute(int value) const {
+	if (!isAttributeRescaleEnabled())
+		return value;
+
+	double ratio = (double) (attributeRangeMax - attributeRangeMin) / (sourceAttributeMax - sourceAttributeMin);
+	double scaled = attributeRangeMin + (value - sourceAttributeMin) * ratio;
+
+	int result = (int) std::lround(scaled / attributeRounding) * attributeRounding;
+
+	return Math::clamp(attributeRangeMin, result, attributeRangeMax);
+}
+
+int PlayerCreationManager::rescaleAttributeTotal(int total) const {
+	if (!isAttributeRescaleEnabled())
+		return total;
+
+	// Same mapping as rescaleAttribute, applied to the sum of all 9 attributes.
+	double ratio = (double) (attributeRangeMax - attributeRangeMin) / (sourceAttributeMax - sourceAttributeMin);
+	double scaled = 9 * attributeRangeMin + (total - 9 * sourceAttributeMin) * ratio;
+
+	return (int) std::lround(scaled / attributeRounding) * attributeRounding;
 }
 
 void PlayerCreationManager::loadLuaStartingItems(Lua* lua) {
@@ -645,10 +736,10 @@ int PlayerCreationManager::getMaximumAttributeLimit(const String& race,
 			maleRace);
 
 	if (racialData != nullptr) {
-		return racialData->getAttributeMax(attributeNumber);
+		return rescaleAttribute(racialData->getAttributeMax(attributeNumber));
 	} else {
-		return racialCreationData.get("human_male")->getAttributeMax(
-				attributeNumber);
+		return rescaleAttribute(racialCreationData.get("human_male")->getAttributeMax(
+				attributeNumber));
 	}
 }
 
@@ -664,10 +755,10 @@ int PlayerCreationManager::getMinimumAttributeLimit(const String& race,
 			maleRace);
 
 	if (racialData != nullptr) {
-		return racialData->getAttributeMin(attributeNumber);
+		return rescaleAttribute(racialData->getAttributeMin(attributeNumber));
 	} else {
-		return racialCreationData.get("human_male")->getAttributeMin(
-				attributeNumber);
+		return rescaleAttribute(racialCreationData.get("human_male")->getAttributeMin(
+				attributeNumber));
 	}
 }
 
@@ -678,9 +769,9 @@ int PlayerCreationManager::getTotalAttributeLimit(const String& race) const {
 			maleRace);
 
 	if (racialData != nullptr) {
-		return racialData->getAttributeTotal();
+		return rescaleAttributeTotal(racialData->getAttributeTotal());
 	} else {
-		return racialCreationData.get("human_male")->getAttributeTotal();
+		return rescaleAttributeTotal(racialCreationData.get("human_male")->getAttributeTotal());
 	}
 }
 
@@ -755,6 +846,7 @@ void PlayerCreationManager::addProfessionStartingItems(CreatureObject* creature,
 
 	//Set the hams.
 	for (int i = 0; i < 9; ++i) {
+		// Raw value; rescaling happens in addRacialMods once the racial mod is added.
 		int mod = professionData->getAttributeMod(i);
 		creature->setBaseHAM(i, mod, false);
 		creature->setHAM(i, mod, false);
@@ -1070,7 +1162,7 @@ void PlayerCreationManager::addRacialMods(CreatureObject* creature,
 		racialData = racialCreationData.get(0);
 
 	for (int i = 0; i < 9; ++i) {
-		int mod = racialData->getAttributeMod(i) + creature->getBaseHAM(i);
+		int mod = rescaleAttribute(racialData->getAttributeMod(i) + creature->getBaseHAM(i));
 		creature->setBaseHAM(i, mod, false);
 		creature->setHAM(i, mod, false);
 		creature->setMaxHAM(i, mod, false);
