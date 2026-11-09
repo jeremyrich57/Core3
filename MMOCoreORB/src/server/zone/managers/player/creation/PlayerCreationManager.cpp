@@ -46,6 +46,7 @@ PlayerCreationManager::PlayerCreationManager() : Logger("PlayerCreationManager")
 	attributeRounding = 1;
 	sourceAttributeMin = 0;
 	sourceAttributeMax = 0;
+	statMigrationEnabled = true;
 
 	freeGodMode = false;
 
@@ -291,6 +292,13 @@ void PlayerCreationManager::loadLuaConfig() {
 			<< " to " << attributeRangeMin << "-" << attributeRangeMax << " (rounded to " << attributeRounding << ")";
 	}
 
+	statMigrationEnabled = validateAttributeLimits();
+
+	if (!statMigrationEnabled) {
+		error() << "datatables/creation/attribute_limits.iff does not match the attribute rescale in player_creation_manager.lua; "
+			<< "stat migration is disabled. Regenerate it with tools/patch/attribute_limits.py, rebuild the patch and restart.";
+	}
+
 	loadLuaStartingItems(lua);
 
 	delete lua;
@@ -343,18 +351,6 @@ bool PlayerCreationManager::isAttributeRescaleEnabled() const {
 	return attributeRangeMax > attributeRangeMin && sourceAttributeMax > sourceAttributeMin;
 }
 
-int PlayerCreationManager::rescaleAttribute(int value) const {
-	if (!isAttributeRescaleEnabled())
-		return value;
-
-	double ratio = (double) (attributeRangeMax - attributeRangeMin) / (sourceAttributeMax - sourceAttributeMin);
-	double scaled = attributeRangeMin + (value - sourceAttributeMin) * ratio;
-
-	int result = (int) std::lround(scaled / attributeRounding) * attributeRounding;
-
-	return Math::clamp(attributeRangeMin, result, attributeRangeMax);
-}
-
 int PlayerCreationManager::rescaleAttributeTotal(int total) const {
 	if (!isAttributeRescaleEnabled())
 		return total;
@@ -364,6 +360,124 @@ int PlayerCreationManager::rescaleAttributeTotal(int total) const {
 	double scaled = 9 * attributeRangeMin + (total - 9 * sourceAttributeMin) * ratio;
 
 	return (int) std::lround(scaled / attributeRounding) * attributeRounding;
+}
+
+void PlayerCreationManager::rescaleAttributes(const int* values, int* result, const RacialCreationData* limits) const {
+	if (!isAttributeRescaleEnabled()) {
+		for (int i = 0; i < 9; ++i)
+			result[i] = values[i];
+
+		return;
+	}
+
+	double ratio = (double) (attributeRangeMax - attributeRangeMin) / (sourceAttributeMax - sourceAttributeMin);
+
+	int total = 0;
+	int units = 0;
+	double error[9]; // exact - rounded, in rounding units
+
+	// Round each attribute to the nearest step, like the attribute_limits.iff min/max values, so
+	// attributes within the original limits stay within the rescaled ones.
+	for (int i = 0; i < 9; ++i) {
+		total += values[i];
+
+		double exact = (attributeRangeMin + (values[i] - sourceAttributeMin) * ratio) / attributeRounding;
+		result[i] = (int) std::lround(exact);
+		error[i] = exact - result[i];
+		units += result[i];
+	}
+
+	// Then move whole steps until the attributes add up to the rescaled total: add to the attributes
+	// rounded down the most, or take from those rounded up the most. Stay within the species limits
+	// when possible.
+	int diff = rescaleAttributeTotal(total) / attributeRounding - units;
+	int step = diff > 0 ? 1 : -1;
+
+	for (int pass = 0; pass < 2 && diff != 0; ++pass) {
+		bool useLimits = pass == 0 && limits != nullptr;
+		bool adjusted[9] = {false, false, false, false, false, false, false, false, false};
+
+		while (diff != 0) {
+			int best = -1;
+
+			for (int i = 0; i < 9; ++i) {
+				if (adjusted[i])
+					continue;
+
+				if (useLimits) {
+					int value = (result[i] + step) * attributeRounding;
+
+					if (value < limits->getAttributeMin(i) || value > limits->getAttributeMax(i))
+						continue;
+				}
+
+				if (best == -1 || error[i] * step > error[best] * step)
+					best = i;
+			}
+
+			if (best == -1)
+				break;
+
+			result[best] += step;
+			error[best] -= step;
+			adjusted[best] = true;
+			diff -= step;
+		}
+	}
+
+	for (int i = 0; i < 9; ++i)
+		result[i] *= attributeRounding;
+}
+
+bool PlayerCreationManager::validateAttributeLimits() const {
+	if (!isAttributeRescaleEnabled())
+		return true;
+
+	// Every species/profession starting kit must add up to the species total in attribute_limits.iff,
+	// since migration requires the new attributes to add up to that total. The stock file's totals
+	// (5400-6100) never match rescaled attributes, so this also catches a missing or outdated patch.
+
+	for (int r = 0; r < racialCreationData.size(); ++r) {
+		const String& race = racialCreationData.elementAt(r).getKey();
+		const RacialCreationData* racialData = racialCreationData.elementAt(r).getValue();
+
+		if (racialData == nullptr)
+			continue;
+
+		for (int p = 0; p < professionDefaultsInfo.size(); ++p) {
+			const ProfessionDefaultsInfo* professionData = professionDefaultsInfo.elementAt(p).getValue();
+
+			if (professionData == nullptr)
+				continue;
+
+			int values[9];
+			int professionTotal = 0;
+
+			for (int i = 0; i < 9; ++i) {
+				values[i] = professionData->getAttributeMod(i) + racialData->getAttributeMod(i);
+				professionTotal += professionData->getAttributeMod(i);
+			}
+
+			if (professionTotal <= 0)
+				continue;
+
+			int rescaled[9];
+			rescaleAttributes(values, rescaled, racialData);
+
+			int total = 0;
+
+			for (int i = 0; i < 9; ++i)
+				total += rescaled[i];
+
+			if (total != racialData->getAttributeTotal()) {
+				error() << race << " " << professionDefaultsInfo.elementAt(p).getKey() << ": starting attributes add up to "
+					<< total << " but attribute_limits.iff total is " << racialData->getAttributeTotal();
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 void PlayerCreationManager::loadLuaStartingItems(Lua* lua) {
@@ -742,10 +856,10 @@ int PlayerCreationManager::getMaximumAttributeLimit(const String& race,
 			maleRace);
 
 	if (racialData != nullptr) {
-		return rescaleAttribute(racialData->getAttributeMax(attributeNumber));
+		return racialData->getAttributeMax(attributeNumber);
 	} else {
-		return rescaleAttribute(racialCreationData.get("human_male")->getAttributeMax(
-				attributeNumber));
+		return racialCreationData.get("human_male")->getAttributeMax(
+				attributeNumber);
 	}
 }
 
@@ -761,10 +875,10 @@ int PlayerCreationManager::getMinimumAttributeLimit(const String& race,
 			maleRace);
 
 	if (racialData != nullptr) {
-		return rescaleAttribute(racialData->getAttributeMin(attributeNumber));
+		return racialData->getAttributeMin(attributeNumber);
 	} else {
-		return rescaleAttribute(racialCreationData.get("human_male")->getAttributeMin(
-				attributeNumber));
+		return racialCreationData.get("human_male")->getAttributeMin(
+				attributeNumber);
 	}
 }
 
@@ -775,9 +889,9 @@ int PlayerCreationManager::getTotalAttributeLimit(const String& race) const {
 			maleRace);
 
 	if (racialData != nullptr) {
-		return rescaleAttributeTotal(racialData->getAttributeTotal());
+		return racialData->getAttributeTotal();
 	} else {
-		return rescaleAttributeTotal(racialCreationData.get("human_male")->getAttributeTotal());
+		return racialCreationData.get("human_male")->getAttributeTotal();
 	}
 }
 
@@ -1167,8 +1281,16 @@ void PlayerCreationManager::addRacialMods(CreatureObject* creature,
 	if (racialData == nullptr)
 		racialData = racialCreationData.get(0);
 
+	int values[9];
+
+	for (int i = 0; i < 9; ++i)
+		values[i] = racialData->getAttributeMod(i) + creature->getBaseHAM(i);
+
+	int mods[9];
+	rescaleAttributes(values, mods, racialData);
+
 	for (int i = 0; i < 9; ++i) {
-		int mod = rescaleAttribute(racialData->getAttributeMod(i) + creature->getBaseHAM(i));
+		int mod = mods[i];
 		creature->setBaseHAM(i, mod, false);
 		creature->setHAM(i, mod, false);
 		creature->setMaxHAM(i, mod, false);
