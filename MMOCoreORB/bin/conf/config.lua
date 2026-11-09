@@ -149,6 +149,7 @@ Core3 = {
 	------TRE config------
 	TrePath = "/home/swgemu/Desktop/SWGEmu",
 	TreFiles = {
+		"core3_custom.tre", -- custom content from patches/ (tools/patch/build.py); must stay first to override stock files
 		"default_patch.tre",
 		"patch_sku1_14_00.tre",
 		"patch_14_00.tre",
@@ -200,6 +201,10 @@ Core3 = {
 		"data_sample_00.tre",
 		"data_music_00.tre",
 		"bottom.tre"
+	},
+
+	TreManager = {
+		LatestTre = "core3_custom.tre", -- must match the first TreFiles entry
 	},
 
 	------Status Server Config------
