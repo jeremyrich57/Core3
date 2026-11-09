@@ -8,9 +8,11 @@ use std::process::Command;
 use tauri::AppHandle;
 
 use crate::progress;
-use crate::settings::Settings;
+use crate::settings::Server;
 
 pub const EXECUTABLE: &str = "SWGEmu.exe";
+/// The client's graphics/sound/controls options tool; it saves options.cfg itself.
+pub const SETUP_EXECUTABLE: &str = "SWGEmu_Setup.exe";
 
 const CLIENT_FILES: &str = include_str!("../resources/client_files.txt");
 
@@ -180,7 +182,7 @@ pub fn install(app: &AppHandle, source: &str, game: &str) -> Result<(), String> 
 
 /// Write the .cfg files that point the client at the server and add the custom TREs
 /// (highest priority first) above the stock search order.
-pub fn write_config(game: &str, s: &Settings, custom_tres: &[String]) -> Result<(), String> {
+pub fn write_config(game: &str, server: &Server, custom_tres: &[String]) -> Result<(), String> {
     let game = Path::new(game);
     let write = |name: &str, text: String| {
         fs::write(game.join(name), text).map_err(|e| format!("Writing {name}: {e}"))
@@ -197,7 +199,7 @@ pub fn write_config(game: &str, s: &Settings, custom_tres: &[String]) -> Result<
         "swgemu_login.cfg",
         format!(
             "[ClientGame]\n\tloginServerAddress0={}\n\tloginServerPort0={}\n",
-            s.server_host, s.server_port
+            server.host, server.port
         ),
     )?;
 
@@ -215,10 +217,13 @@ pub fn write_config(game: &str, s: &Settings, custom_tres: &[String]) -> Result<
     write("swgemu_live.cfg", live)
 }
 
-pub fn launch(game: &str) -> Result<(), String> {
-    let exe = Path::new(game).join(EXECUTABLE);
+pub fn launch(game: &str, executable: &str) -> Result<(), String> {
+    let exe = Path::new(game).join(executable);
     Command::new(&exe)
         .current_dir(game)
+        // Windows "installer detection" forces a UAC prompt for unsigned 32-bit programs
+        // named like an installer (SWGEmu_Setup.exe). Neither tool needs admin rights.
+        .env("__COMPAT_LAYER", "RunAsInvoker")
         .spawn()
         .map(|_| ())
         .map_err(|e| format!("Could not start {}: {e}", exe.display()))
@@ -243,7 +248,7 @@ mod tests {
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).unwrap();
         fs::write(dir.join("options.cfg"), "").unwrap();
-        let s = Settings { server_host: "example.org".into(), server_port: 44453, ..Default::default() };
+        let s = Server { host: "example.org".into(), port: 44453, ..Default::default() };
         let game = dir.to_str().unwrap();
 
         write_config(game, &s, &["b.tre".into(), "a.tre".into()]).unwrap();

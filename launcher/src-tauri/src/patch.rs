@@ -33,6 +33,9 @@ struct Entry {
 
 #[derive(Serialize, Deserialize, Default)]
 struct State {
+    /// Manifest the files came from, so switching servers never reuses another server's patches.
+    #[serde(default)]
+    manifest: String,
     files: Vec<String>,
 }
 
@@ -175,18 +178,24 @@ fn read_state(game: &Path) -> State {
 /// highest priority first. If the manifest can't be reached, keeps what is installed.
 pub async fn sync(app: &AppHandle, manifest_url: &str, game: &str) -> Result<Vec<String>, String> {
     let game = Path::new(game);
-    let (source, location) = Source::parse(manifest_url);
     let previous = read_state(game);
 
+    if manifest_url.trim().is_empty() {
+        finish(app, game, &previous, manifest_url, Vec::new(), 0)?;
+        return Ok(Vec::new());
+    }
+
+    let (source, location) = Source::parse(manifest_url);
     let manifest = match fetch_manifest(&source, &location).await {
         Ok(m) => m,
-        Err(e) if !previous.files.is_empty() => {
+        Err(e) if matches!(source, Source::Http(_)) && e.contains("404") => {
+            progress::log(app, "No patches have been published for this server yet.");
+            finish(app, game, &previous, manifest_url, Vec::new(), 0)?;
+            return Ok(Vec::new());
+        }
+        Err(e) if previous.manifest == manifest_url && !previous.files.is_empty() => {
             progress::log(app, &format!("{e}\nUsing the patches already installed."));
             return Ok(previous.files);
-        }
-        Err(e) if matches!(source, Source::Http(_)) && e.contains("404") => {
-            progress::log(app, "No patches have been published yet.");
-            return Ok(Vec::new());
         }
         Err(e) => return Err(e),
     };
@@ -201,22 +210,37 @@ pub async fn sync(app: &AppHandle, manifest_url: &str, game: &str) -> Result<Vec
     }
 
     let names: Vec<String> = manifest.files.iter().map(|e| e.name.clone()).collect();
+    finish(app, game, &previous, manifest_url, names.clone(), updated)?;
+    Ok(names)
+}
+
+/// Delete custom TREs that are no longer listed, record the current set, and report.
+fn finish(
+    app: &AppHandle,
+    game: &Path,
+    previous: &State,
+    manifest_url: &str,
+    names: Vec<String>,
+    updated: usize,
+) -> Result<(), String> {
     for old in previous.files.iter().filter(|n| !names.contains(n)) {
         let _ = fs::remove_file(game.join(old));
         progress::log(app, &format!("Removed old patch {old}"));
     }
-    let state = serde_json::to_string_pretty(&State { files: names.clone() }).map_err(|e| e.to_string())?;
+    let count = names.len();
+    let state = State { manifest: manifest_url.to_string(), files: names };
+    let state = serde_json::to_string_pretty(&state).map_err(|e| e.to_string())?;
     fs::write(game.join(STATE_FILE), state).map_err(|e| e.to_string())?;
 
     progress::log(
         app,
-        &match (names.len(), updated) {
+        &match (count, updated) {
             (0, _) => "No custom patches.".to_string(),
             (n, 0) => format!("{n} custom patch file(s) up to date."),
             (n, u) => format!("Updated {u} of {n} custom patch file(s)."),
         },
     );
-    Ok(names)
+    Ok(())
 }
 
 #[cfg(test)]

@@ -45,18 +45,29 @@ async fn install_client(app: AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())?
 }
 
-/// Download changed patches, write the client config, and start the game.
+/// Download the selected server's patches, write the client config, and start the game.
 #[tauri::command]
 async fn play(app: AppHandle) -> Result<(), String> {
     let s = settings::load(&app);
     if !client::is_installed(&s.game_dir) {
         return Err("The game is not installed yet.".into());
     }
-    let custom = patch::sync(&app, &s.manifest_url, &s.game_dir).await?;
-    client::write_config(&s.game_dir, &s, &custom)?;
-    client::launch(&s.game_dir)?;
-    progress::log(&app, &format!("Started SWG -> {}:{}", s.server_host, s.server_port));
+    let server = s.server()?;
+    let custom = patch::sync(&app, &server.manifest_url, &s.game_dir).await?;
+    client::write_config(&s.game_dir, server, &custom)?;
+    client::launch(&s.game_dir, client::EXECUTABLE)?;
+    progress::log(&app, &format!("Started SWG -> {} ({}:{})", server.name, server.host, server.port));
     Ok(())
+}
+
+/// Open the client's own options tool on the launcher's game folder.
+#[tauri::command]
+fn open_game_settings(app: AppHandle) -> Result<(), String> {
+    let s = settings::load(&app);
+    if !client::is_installed(&s.game_dir) {
+        return Err("Install the game first.".into());
+    }
+    client::launch(&s.game_dir, client::SETUP_EXECUTABLE)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -69,7 +80,8 @@ pub fn run() {
             save_settings,
             get_status,
             install_client,
-            play
+            play,
+            open_game_settings
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

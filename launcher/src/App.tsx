@@ -4,18 +4,25 @@ import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import "./App.css";
 
+type Server = {
+  name: string;
+  host: string;
+  port: number;
+  manifestUrl: string;
+};
+
 type Settings = {
   sourceDir: string;
   gameDir: string;
-  serverHost: string;
-  serverPort: number;
-  manifestUrl: string;
+  servers: Server[];
+  selectedServer: number;
 };
 
 type Status = { sourceProblem: string | null; installed: boolean };
 type Progress = { message: string; done: number; total: number };
 
 const MAX_LOG_LINES = 200;
+const NEW_SERVER: Server = { name: "", host: "", port: 44453, manifestUrl: "" };
 
 function errorText(e: unknown): string {
   return typeof e === "string" ? e : e instanceof Error ? e.message : JSON.stringify(e);
@@ -52,7 +59,7 @@ export default function App() {
 
   useEffect(() => logEnd.current?.scrollIntoView(), [log]);
 
-  async function run(command: "install_client" | "play") {
+  async function run(command: "install_client" | "play" | "open_game_settings") {
     setBusy(true);
     setProgress(null);
     try {
@@ -66,14 +73,14 @@ export default function App() {
     }
   }
 
-  async function saveSettings(next: Settings) {
+  async function saveSettings(next: Settings): Promise<boolean> {
     try {
       await invoke("save_settings", { settings: next });
       await refresh();
-      addLog("Settings saved.");
-      setShowSettings(false);
+      return true;
     } catch (e) {
       addLog(`Error saving settings: ${errorText(e)}`);
+      return false;
     }
   }
 
@@ -87,18 +94,45 @@ export default function App() {
     <main className="app">
       <header>
         <h1>Core3 Launcher</h1>
-        <button className="link" onClick={() => setShowSettings((s) => !s)} disabled={busy}>
-          {showSettings ? "Close settings" : "Settings"}
-        </button>
+        <nav>
+          {!showSettings && (
+            <button className="link" onClick={() => run("open_game_settings")} disabled={busy || needsInstall}>
+              Game settings
+            </button>
+          )}
+          <button className="link" onClick={() => setShowSettings((s) => !s)} disabled={busy}>
+            {showSettings ? "Close settings" : "Launcher settings"}
+          </button>
+        </nav>
       </header>
 
       {showSettings ? (
-        <SettingsForm initial={settings} onSave={saveSettings} onCancel={() => setShowSettings(false)} />
+        <SettingsForm
+          initial={settings}
+          onSave={async (s) => {
+            if (await saveSettings(s)) {
+              addLog("Settings saved.");
+              setShowSettings(false);
+            }
+          }}
+          onCancel={() => setShowSettings(false)}
+        />
       ) : (
         <section className="home">
-          <div className="server">
-            Server <strong>{settings.serverHost}:{settings.serverPort}</strong>
-          </div>
+          <label className="server-pick">
+            Server
+            <select
+              value={settings.selectedServer}
+              disabled={busy}
+              onChange={(e) => saveSettings({ ...settings, selectedServer: Number(e.target.value) })}
+            >
+              {settings.servers.map((s, i) => (
+                <option key={i} value={i}>
+                  {s.name} — {s.host}:{s.port}
+                </option>
+              ))}
+            </select>
+          </label>
 
           {needsInstall && (
             <p className={status.sourceProblem ? "notice warn" : "notice"}>
@@ -152,11 +186,41 @@ function SettingsForm({
   onCancel: () => void;
 }) {
   const [s, setS] = useState(initial);
-  const set = <K extends keyof Settings>(key: K, value: Settings[K]) => setS((prev) => ({ ...prev, [key]: value }));
+  // Index of the server being edited; servers.length means a new one.
+  const [editing, setEditing] = useState<number | null>(null);
 
   async function pick(key: "sourceDir" | "gameDir") {
     const dir = await open({ directory: true, defaultPath: s[key] || undefined });
-    if (typeof dir === "string") set(key, dir);
+    if (typeof dir === "string") setS((prev) => ({ ...prev, [key]: dir }));
+  }
+
+  function saveServer(index: number, server: Server) {
+    setS((prev) => {
+      const servers = [...prev.servers];
+      servers[index] = server;
+      return { ...prev, servers };
+    });
+    setEditing(null);
+  }
+
+  function removeServer(index: number) {
+    setS((prev) => {
+      const servers = prev.servers.filter((_, i) => i !== index);
+      let selected = prev.selectedServer;
+      if (index < selected || selected >= servers.length) selected = Math.max(0, selected - 1);
+      return { ...prev, servers, selectedServer: selected };
+    });
+  }
+
+  if (editing !== null) {
+    return (
+      <ServerForm
+        initial={s.servers[editing] ?? NEW_SERVER}
+        isNew={editing >= s.servers.length}
+        onSave={(server) => saveServer(editing, server)}
+        onCancel={() => setEditing(null)}
+      />
+    );
   }
 
   return (
@@ -170,21 +234,83 @@ function SettingsForm({
       <label>
         Existing SWGEmu install (read only)
         <div className="row">
-          <input value={s.sourceDir} onChange={(e) => set("sourceDir", e.target.value)} />
+          <input value={s.sourceDir} onChange={(e) => setS({ ...s, sourceDir: e.target.value })} />
           <button type="button" onClick={() => pick("sourceDir")}>Browse</button>
         </div>
       </label>
       <label>
         Game folder (managed by the launcher)
         <div className="row">
-          <input value={s.gameDir} onChange={(e) => set("gameDir", e.target.value)} />
+          <input value={s.gameDir} onChange={(e) => setS({ ...s, gameDir: e.target.value })} />
           <button type="button" onClick={() => pick("gameDir")}>Browse</button>
         </div>
       </label>
+
+      <div className="servers">
+        <div className="servers-head">
+          <span>Servers</span>
+          <button type="button" onClick={() => setEditing(s.servers.length)}>Add server</button>
+        </div>
+        {s.servers.map((server, i) => (
+          <div key={i} className="server-row">
+            <div className="grow">
+              <strong>{server.name}</strong>
+              <span className="muted"> {server.host}:{server.port}</span>
+              <div className="muted small">{server.manifestUrl || "No custom patches"}</div>
+            </div>
+            <button type="button" onClick={() => setEditing(i)}>Edit</button>
+            <button
+              type="button"
+              disabled={s.servers.length === 1}
+              title={s.servers.length === 1 ? "Keep at least one server" : undefined}
+              onClick={() => removeServer(i)}
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="row end">
+        <button type="button" className="link" onClick={onCancel}>Cancel</button>
+        <button type="submit">Save</button>
+      </div>
+    </form>
+  );
+}
+
+function ServerForm({
+  initial,
+  isNew,
+  onSave,
+  onCancel,
+}: {
+  initial: Server;
+  isNew: boolean;
+  onSave: (s: Server) => void;
+  onCancel: () => void;
+}) {
+  const [server, setServer] = useState(initial);
+  const set = <K extends keyof Server>(key: K, value: Server[K]) => setServer((prev) => ({ ...prev, [key]: value }));
+  const valid = server.name.trim() !== "" && server.host.trim() !== "" && server.port > 0 && server.port <= 65535;
+
+  return (
+    <form
+      className="settings"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (valid) onSave({ ...server, name: server.name.trim(), host: server.host.trim(), manifestUrl: server.manifestUrl.trim() });
+      }}
+    >
+      <h2>{isNew ? "Add server" : `Edit ${initial.name}`}</h2>
+      <label>
+        Name
+        <input autoFocus value={server.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Friends server" />
+      </label>
       <div className="row">
         <label className="grow">
-          Server address
-          <input value={s.serverHost} onChange={(e) => set("serverHost", e.target.value.trim())} />
+          Address
+          <input value={server.host} onChange={(e) => set("host", e.target.value)} placeholder="IP or hostname" />
         </label>
         <label className="port">
           Port
@@ -192,18 +318,18 @@ function SettingsForm({
             type="number"
             min={1}
             max={65535}
-            value={s.serverPort}
-            onChange={(e) => set("serverPort", Number(e.target.value))}
+            value={server.port}
+            onChange={(e) => set("port", Number(e.target.value))}
           />
         </label>
       </div>
       <label>
-        Patch manifest (URL or local path)
-        <input value={s.manifestUrl} onChange={(e) => set("manifestUrl", e.target.value)} />
+        Patch manifest (URL or local path; leave empty for no custom patches)
+        <input value={server.manifestUrl} onChange={(e) => set("manifestUrl", e.target.value)} />
       </label>
       <div className="row end">
-        <button type="button" className="link" onClick={onCancel}>Cancel</button>
-        <button type="submit">Save</button>
+        <button type="button" className="link" onClick={onCancel}>Back</button>
+        <button type="submit" disabled={!valid}>{isNew ? "Add" : "Done"}</button>
       </div>
     </form>
   );

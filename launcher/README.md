@@ -5,10 +5,14 @@ Windows launcher for the Core3 server. Built with [Tauri v2](https://tauri.app):
 ## What it does
 
 1. **Install:** checks an existing SWGEmu install (the "source", never modified) against `src-tauri/resources/client_files.txt` and hard-links its files into a launcher-managed game folder. Linking is instant and uses no extra disk space; it copies instead if the folders are on different drives.
-2. **Play:**
-   - downloads changed custom TREs listed in the patch manifest (built by `tools/patch/build.py`) and verifies their sha256
+2. **Servers:** keep a list of servers (name, address, port, and patch manifest) and pick one on the main screen. Each server has its own manifest, so switching servers swaps the custom TREs to match.
+3. **Play:**
+   - downloads the selected server's changed custom TREs (built by `tools/patch/build.py`) and verifies their sha256
    - writes `swgemu_login.cfg` (server address) and `swgemu_live.cfg` (stock TREs plus custom TREs at top priority)
    - starts `SWGEmu.exe`
+4. **Game settings:** opens the client's own options tool (`SWGEmu_Setup.exe`) on the game folder. It saves `options.cfg` itself.
+
+Both programs are started with `__COMPAT_LAYER=RunAsInvoker`. Otherwise Windows' installer detection would demand admin rights for `SWGEmu_Setup.exe` (error 740).
 
 Settings live in `%APPDATA%\com.jeremyrich.core3launcher\settings.json`. The default game folder is `%LOCALAPPDATA%\com.jeremyrich.core3launcher\game`.
 
@@ -26,7 +30,7 @@ cd src-tauri; cargo test
 
 ### Testing patches without publishing
 
-Set **Settings → Patch manifest** to a local path, for example the build output in WSL:
+Add a server (or edit one) in **Launcher settings** with its patch manifest set to a local path, for example the build output in WSL:
 
 ```
 \\wsl.localhost\Ubuntu\home\jrich\repos\Core3\build\patches\manifest.json
