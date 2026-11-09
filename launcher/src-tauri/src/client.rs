@@ -217,9 +217,27 @@ pub fn write_config(game: &str, server: &Server, custom_tres: &[String]) -> Resu
     write("swgemu_live.cfg", live)
 }
 
-pub fn launch(game: &str, executable: &str) -> Result<(), String> {
+/// Command line for SWGEmu.exe. The client must get "-- -s <section> key=value ..." settings:
+/// started without arguments it doesn't set up its TRE search paths and crashes with
+/// "appearance/defaultappearance.apt could not be found". Same as the SWGEmu launchpad.
+pub fn game_arguments(server: &Server) -> Vec<String> {
+    [
+        "--".to_string(),
+        "-s".into(),
+        "ClientGame".into(),
+        format!("loginServerAddress0={}", server.host),
+        format!("loginServerPort0={}", server.port),
+        "-s".into(),
+        "Station".into(),
+        "gameFeatures=34929".into(),
+    ]
+    .to_vec()
+}
+
+pub fn launch(game: &str, executable: &str, args: &[String]) -> Result<(), String> {
     let exe = Path::new(game).join(executable);
     Command::new(&exe)
+        .args(args)
         .current_dir(game)
         // Windows "installer detection" forces a UAC prompt for unsigned 32-bit programs
         // named like an installer (SWGEmu_Setup.exe). Neither tool needs admin rights.
@@ -262,5 +280,14 @@ mod tests {
         let main = fs::read_to_string(dir.join("swgemu.cfg")).unwrap();
         assert_eq!(main, ".include \"swgemu_login.cfg\"\n.include \"swgemu_live.cfg\"\n.include \"options.cfg\"\n");
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn game_arguments_set_login_server() {
+        let s = Server { host: "example.org".into(), port: 44453, ..Default::default() };
+        let args = game_arguments(&s);
+        assert_eq!(args[0], "--");
+        assert!(args.contains(&"loginServerAddress0=example.org".to_string()));
+        assert!(args.contains(&"loginServerPort0=44453".to_string()));
     }
 }

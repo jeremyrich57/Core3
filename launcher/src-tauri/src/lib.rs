@@ -55,7 +55,7 @@ async fn play(app: AppHandle) -> Result<(), String> {
     let server = s.server()?;
     let custom = patch::sync(&app, &server.manifest_url, &s.game_dir).await?;
     client::write_config(&s.game_dir, server, &custom)?;
-    client::launch(&s.game_dir, client::EXECUTABLE)?;
+    client::launch(&s.game_dir, client::EXECUTABLE, &client::game_arguments(server))?;
     progress::log(&app, &format!("Started SWG -> {} ({}:{})", server.name, server.host, server.port));
     Ok(())
 }
@@ -67,7 +67,7 @@ fn open_game_settings(app: AppHandle) -> Result<(), String> {
     if !client::is_installed(&s.game_dir) {
         return Err("Install the game first.".into());
     }
-    client::launch(&s.game_dir, client::SETUP_EXECUTABLE)
+    client::launch(&s.game_dir, client::SETUP_EXECUTABLE, &[])
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

@@ -106,7 +106,9 @@ def read(path: str) -> tuple[list[Record], bytes]:
 
 
 def read_file(raw: bytes, record: Record) -> bytes:
-    data = raw[record.offset:record.offset + record.stored_size]
+    # Uncompressed records store 0 as their stored size; their length is the uncompressed size.
+    stored = record.size if record.compression == COMPRESSION_NONE else record.stored_size
+    data = raw[record.offset:record.offset + stored]
     return _unpack_block(data, record.compression, record.size)
 
 
@@ -141,7 +143,9 @@ def write(path: str, files: dict[str, bytes]) -> None:
             comp, stored = COMPRESSION_ZLIB, packed
         else:
             comp, stored = COMPRESSION_NONE, data
-        toc += RECORD.pack(crc(norm), len(data), offset, comp, len(stored), len(name_block))
+        # Stock TREs record 0 as the stored size of uncompressed files.
+        stored_size = len(stored) if comp == COMPRESSION_ZLIB else 0
+        toc += RECORD.pack(crc(norm), len(data), offset, comp, stored_size, len(name_block))
         name_block += norm.encode("ascii") + b"\0"
         md5s += hashlib.md5(stored).digest()
         body += stored
