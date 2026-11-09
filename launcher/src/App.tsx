@@ -57,7 +57,11 @@ export default function App() {
     };
   }, [refresh, addLog]);
 
-  useEffect(() => logEnd.current?.scrollIntoView(), [log]);
+  useEffect(() => {
+    // Braces matter: newer WebView2 returns a Promise from scrollIntoView, and React would
+    // treat a returned value as the effect's cleanup function and crash calling it.
+    logEnd.current?.scrollIntoView();
+  }, [log]);
 
   async function run(command: "install_client" | "play" | "open_game_settings") {
     setBusy(true);
