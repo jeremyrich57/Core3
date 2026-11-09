@@ -301,3 +301,15 @@ select {
   white-space: pre-wrap;
   user-select: text;
 }
+
+.advanced {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.advanced summary {
+  cursor: pointer;
+  color: var(--muted);
+  margin-bottom: 6px;
+}

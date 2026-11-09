@@ -175,7 +175,8 @@ fn read_state(game: &Path) -> State {
 }
 
 /// Bring the custom TREs in `game` in line with the manifest. Returns their names,
-/// highest priority first. If the manifest can't be reached, keeps what is installed.
+/// highest priority first. Patches are optional: if the manifest doesn't exist the game
+/// starts without custom patches, and if it can't be reached the installed ones are kept.
 pub async fn sync(app: &AppHandle, manifest_url: &str, game: &str) -> Result<Vec<String>, String> {
     let game = Path::new(game);
     let previous = read_state(game);
@@ -186,10 +187,19 @@ pub async fn sync(app: &AppHandle, manifest_url: &str, game: &str) -> Result<Vec
     }
 
     let (source, location) = Source::parse(manifest_url);
-    let manifest = match fetch_manifest(&source, &location).await {
+    let missing = match &source {
+        Source::Local(_) => !Path::new(&location).is_file(),
+        Source::Http(_) => false,
+    };
+    let fetched = if missing {
+        Err(format!("{location} not found"))
+    } else {
+        fetch_manifest(&source, &location).await
+    };
+    let manifest = match fetched {
         Ok(m) => m,
-        Err(e) if matches!(source, Source::Http(_)) && e.contains("404") => {
-            progress::log(app, "No patches have been published for this server yet.");
+        Err(e) if missing || (matches!(source, Source::Http(_)) && e.contains("404")) => {
+            progress::log(app, "No patches have been published for this server.");
             finish(app, game, &previous, manifest_url, Vec::new(), 0)?;
             return Ok(Vec::new());
         }
@@ -197,7 +207,10 @@ pub async fn sync(app: &AppHandle, manifest_url: &str, game: &str) -> Result<Vec
             progress::log(app, &format!("{e}\nUsing the patches already installed."));
             return Ok(previous.files);
         }
-        Err(e) => return Err(e),
+        Err(e) => {
+            progress::log(app, &format!("{e}\nStarting without custom patches."));
+            return Ok(Vec::new());
+        }
     };
 
     let mut updated = 0;
