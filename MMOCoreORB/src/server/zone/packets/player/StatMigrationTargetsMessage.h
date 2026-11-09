@@ -15,11 +15,19 @@ public:
 
 		const DeltaVector<int>* baseHam = creo->getBaseHAM();
 
+		// Normally 0, but characters whose stats don't add up to the species total (e.g. created
+		// under different attribute rescaling) get the difference to redistribute.
+		int totalLimit = PlayerCreationManager::instance()->getTotalAttributeLimit(creo->getSpeciesName());
+
 		for (int i = 0; i < 9; ++i) {
-			insertInt(baseHam->get(i));
+			int val = baseHam->get(i);
+
+			totalLimit -= val;
+
+			insertInt(val);
 		}
 
-		insertInt(0); // Points Remaining
+		insertInt(totalLimit); // Points Remaining
 
 		setCompression(true);
 	}

@@ -10,11 +10,13 @@ startingBank = 1000
 skillPoints = 250
 --Starting attributes (HAM) of new characters are rescaled proportionally into this range.
 --The lowest stat any species/profession combination can start with maps to attributeRangeMin,
---the highest to attributeRangeMax, and results are rounded to the nearest attributeRounding.
---Stat migration limits are rescaled the same way. Only affects characters created after the change.
+--the highest to attributeRangeMax, and results are rounded to attributeRounding (adding up exactly to the
+--species total). Only affects characters created after the change.
 --Set attributeRangeMin and attributeRangeMax to 0 to use the client's original values.
---NOTE: while rescaling is on, stat migration is disabled, because the client's own attribute_limits.iff
---still has the original limits. TODO: ship a rescaled attribute_limits.iff via the launcher, then re-enable.
+--Stat migration limits come from datatables/creation/attribute_limits.iff, shared with the client. After
+--changing these values, regenerate it and rebuild the patch (see patches/README.md):
+--  python3 tools/patch/attribute_limits.py ~/tre && python3 tools/patch/build.py --install ~/tre
+--If the file doesn't match these values, the server logs an error at startup and disables stat migration.
 attributeRangeMin = 1600
 attributeRangeMax = 2400
 attributeRounding = 100

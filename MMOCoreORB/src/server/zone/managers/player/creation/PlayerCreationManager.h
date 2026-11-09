@@ -82,6 +82,9 @@ class PlayerCreationManager : public Singleton<PlayerCreationManager>, public Lo
 	int sourceAttributeMin;
 	int sourceAttributeMax;
 
+	// False when rescaling is on but attribute_limits.iff doesn't match it (see validateAttributeLimits).
+	bool statMigrationEnabled;
+
 	bool freeGodMode;
 
 	mutable HashTable<uint32, Time> lastCreatedCharacter;
@@ -89,9 +92,15 @@ class PlayerCreationManager : public Singleton<PlayerCreationManager>, public Lo
 
 	void loadLuaConfig();
 	void loadAttributeSourceRange();
+	bool validateAttributeLimits() const;
 
-	int rescaleAttribute(int value) const;
 	int rescaleAttributeTotal(int total) const;
+
+	/**
+	 * Rescales 9 starting attributes, rounded to attributeRounding, so that they add up exactly to
+	 * rescaleAttributeTotal() of the original sum while staying within the species' limits if possible.
+	 */
+	void rescaleAttributes(const int* values, int* result, const RacialCreationData* limits) const;
 
 	void loadRacialCreationData();
 	void loadDefaultCharacterItems();
@@ -119,13 +128,12 @@ public:
 	bool isAttributeRescaleEnabled() const;
 
 	/**
-	 * Stat migration is disabled while starting attributes are rescaled: the client builds its
-	 * migration sliders from its own (unscaled) attribute_limits.iff, so its values would never
-	 * pass server validation.
-	 * TODO: re-enable once the launcher ships a patched attribute_limits.iff matching the rescale.
+	 * Migration limits come straight from datatables/creation/attribute_limits.iff, which the client
+	 * also uses for its sliders. While starting attributes are rescaled, that file must be the
+	 * rescaled one from patches/ (tools/patch/attribute_limits.py); otherwise migration is disabled.
 	 */
 	bool isStatMigrationEnabled() const {
-		return !isAttributeRescaleEnabled();
+		return statMigrationEnabled;
 	}
 
 	/**
