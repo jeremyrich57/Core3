@@ -7,6 +7,7 @@ use tauri::{AppHandle, Manager};
 pub const DEFAULT_SERVER_NAME: &str = "Local";
 pub const DEFAULT_SERVER_HOST: &str = "127.0.0.1";
 pub const DEFAULT_SERVER_PORT: u16 = 44453;
+/// Patch manifest used unless a server sets its own (the rolling `patches` GitHub release).
 pub const DEFAULT_MANIFEST_URL: &str =
     "https://github.com/jeremyrich57/Core3/releases/download/patches/manifest.json";
 
@@ -24,8 +25,18 @@ pub struct Server {
     pub name: String,
     pub host: String,
     pub port: u16,
-    /// http(s) URL or local path of the server's patch manifest.json; empty = no custom patches.
+    /// Optional custom patch manifest.json (http(s) URL or local path); empty = DEFAULT_MANIFEST_URL.
     pub manifest_url: String,
+}
+
+impl Server {
+    /// The patch manifest to sync from: the custom one if set, otherwise the default.
+    pub fn manifest(&self) -> &str {
+        match self.manifest_url.trim() {
+            "" => DEFAULT_MANIFEST_URL,
+            custom => custom,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -93,8 +104,14 @@ fn fill_defaults(mut s: Settings, default_game_dir: String) -> Settings {
             name: DEFAULT_SERVER_NAME.into(),
             host: if legacy { s.server_host.clone() } else { DEFAULT_SERVER_HOST.into() },
             port: if s.server_port != 0 { s.server_port } else { DEFAULT_SERVER_PORT },
-            manifest_url: if legacy { s.manifest_url.clone() } else { DEFAULT_MANIFEST_URL.into() },
+            manifest_url: if legacy { s.manifest_url.clone() } else { String::new() },
         });
+    }
+    // Earlier versions saved the default manifest explicitly; clear it so servers follow the built-in default.
+    for server in &mut s.servers {
+        if server.manifest_url.trim() == DEFAULT_MANIFEST_URL {
+            server.manifest_url.clear();
+        }
     }
     if s.selected_server >= s.servers.len() {
         s.selected_server = 0;
@@ -138,5 +155,16 @@ mod tests {
         assert_eq!(s.game_dir, "G");
         assert_eq!(s.servers[0].host, DEFAULT_SERVER_HOST);
         assert_eq!(s.server().unwrap().port, DEFAULT_SERVER_PORT);
+        assert_eq!(s.servers[0].manifest_url, "");
+        assert_eq!(s.server().unwrap().manifest(), DEFAULT_MANIFEST_URL);
+    }
+
+    #[test]
+    fn saved_default_manifest_follows_built_in_default() {
+        let saved = format!(r#"{{"servers":[{{"name":"A","host":"h","port":1,"manifestUrl":"{DEFAULT_MANIFEST_URL}"}},{{"name":"B","host":"h","port":1,"manifestUrl":" C:\\m.json "}}]}}"#);
+        let s = fill_defaults(serde_json::from_str(&saved).unwrap(), String::new());
+        assert_eq!(s.servers[0].manifest_url, "");
+        assert_eq!(s.servers[0].manifest(), DEFAULT_MANIFEST_URL);
+        assert_eq!(s.servers[1].manifest(), "C:\\m.json");
     }
 }

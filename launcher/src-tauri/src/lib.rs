@@ -53,7 +53,7 @@ async fn play(app: AppHandle) -> Result<(), String> {
         return Err("The game is not installed yet.".into());
     }
     let server = s.server()?;
-    let custom = patch::sync(&app, &server.manifest_url, &s.game_dir).await?;
+    let custom = patch::sync(&app, server.manifest(), &s.game_dir).await?;
     client::write_config(&s.game_dir, server, &custom)?;
     client::launch(&s.game_dir, client::EXECUTABLE, &client::game_arguments(server))?;
     progress::log(&app, &format!("Started SWG -> {} ({}:{})", server.name, server.host, server.port));
