@@ -260,7 +260,7 @@ function SettingsForm({
             <div className="grow">
               <strong>{server.name}</strong>
               <span className="muted"> {server.host}:{server.port}</span>
-              <div className="muted small">{server.manifestUrl || "No custom patches"}</div>
+              {server.manifestUrl && <div className="muted small">Custom patches: {server.manifestUrl}</div>}
             </div>
             <button type="button" onClick={() => setEditing(i)}>Edit</button>
             <button
@@ -327,10 +327,18 @@ function ServerForm({
           />
         </label>
       </div>
-      <label>
-        Patch manifest (URL or local path; leave empty for no custom patches)
-        <input value={server.manifestUrl} onChange={(e) => set("manifestUrl", e.target.value)} />
-      </label>
+      <details className="advanced" open={initial.manifestUrl !== ""}>
+        <summary>Advanced</summary>
+        <label>
+          Custom patch manifest (optional)
+          <input
+            value={server.manifestUrl}
+            onChange={(e) => set("manifestUrl", e.target.value)}
+            placeholder="Leave empty to use the default patches"
+          />
+        </label>
+        <div className="muted small">URL or local path of a manifest.json from tools/patch/build.py.</div>
+      </details>
       <div className="row end">
         <button type="button" className="link" onClick={onCancel}>Back</button>
         <button type="submit" disabled={!valid}>{isNew ? "Add" : "Done"}</button>
