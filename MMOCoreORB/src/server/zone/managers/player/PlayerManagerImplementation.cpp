@@ -2625,9 +2625,12 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 		trx.addState("speciesModifier", speciesModifier);
 		trx.addState("buffMultiplier", buffMultiplier);
 		trx.addState("localMultiplier", localMultiplier);
-		trx.addState("globalExpMultiplier", globalExpMultiplier);
+		// Jedi experience (gains and losses) is excluded from the global multiplier
+		float globalMultiplier = xpType == "jedi_general" ? 1.f : globalExpMultiplier;
 
-		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * buffMultiplier * localMultiplier * globalExpMultiplier));
+		trx.addState("globalExpMultiplier", globalMultiplier);
+
+		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * buffMultiplier * localMultiplier * globalMultiplier));
 	} else {
 		xp = playerObject->addExperience(trx, xpType, (int)amount);
 	}
