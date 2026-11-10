@@ -53,7 +53,14 @@ async fn play(app: AppHandle) -> Result<(), String> {
         return Err("The game is not installed yet.".into());
     }
     let server = s.server()?;
-    let custom = patch::sync(&app, server.manifest(), &s.game_dir).await?;
+    let synced = patch::sync(&app, server.manifest(), &s.game_dir).await?;
+    let options = s.patch_options();
+    let custom = patch::enabled(synced, &options);
+    for option in &options {
+        if !custom.iter().any(|n| n == &format!("core3_opt_{option}.tre")) {
+            progress::log(&app, &format!("This server has no \"{option}\" mod; starting without it."));
+        }
+    }
     client::write_config(&s.game_dir, server, &custom, s.font_locale())?;
     client::launch(&s.game_dir, client::EXECUTABLE, &client::game_arguments(server))?;
     progress::log(&app, &format!("Started SWG -> {} ({}:{})", server.name, server.host, server.port));

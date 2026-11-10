@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the large-UI client files in patches/ui/ (bigger text and bigger HUD icons).
+"""Generate the large-UI client files: bigger text (patches/) and bigger HUD icons (patches-opt/hud*/).
 
     python3 tools/patch/large_ui.py ~/tre
     python3 tools/patch/build.py --install ~/tre
@@ -15,14 +15,16 @@ Larger text (opt-in per player)
         l1  "Large"   about 1.2x   (default_12 draws verdana 14)
         l2  "Larger"  about 1.4x   (default_12 draws verdana 17)
 
-    The launcher's "UI text size" setting writes fontLocale. Without it nothing changes. Window and button
+    The launcher's Mods > "In-game text size" setting writes fontLocale. Without it nothing changes. Window and button
     sizes stay the same, so bigger text can be clipped in tight spots.
     Some stock sizes (verdana 24/30/34, bold 30/34, lucida console 16/18) were blanked by patch_10; their last
     good version (font file + textures from the same TRE) is restored to have bigger glyphs to draw from.
 
-Bigger HUD icons (everyone)
-    The toolbar, button bar, buff icons and combat queue are scaled by --hud-scale (default 1.5): every position
-    and size in those windows, plus their fonts. The window keeps its screen anchor (left/right/center edge).
+Bigger HUD icons (opt-in per player)
+    The toolbar, button bar, buff icons and combat queue are scaled: every position and size in those windows,
+    plus their fonts. The window keeps its screen anchor (left/right/center edge). Each scale in --hud-scales
+    (default 1.25,1.5) goes to its own optional patch, patches-opt/hud<percent>/ -> core3_opt_hud<percent>.tre,
+    which the launcher only loads when Mods > "HUD icon size" selects it.
 """
 
 from __future__ import annotations
@@ -40,6 +42,7 @@ import datatable  # noqa: E402
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CONFIG = os.path.join(REPO, "MMOCoreORB", "bin", "conf", "config.lua")
 PATCHES = os.path.join(REPO, "patches")
+OPTIONAL_PATCHES = os.path.join(REPO, "patches-opt")
 CUSTOM_TRE = "core3_custom.tre"
 
 STYLE_MANAGER = "ui/ui_textstylemanager.inc"
@@ -222,33 +225,43 @@ def scale_hud(text: str, scale: float, bold_sizes: list[int], default_sizes: lis
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("tre_dir", help="directory with the stock client TREs (the server's Core3.TrePath)")
-    ap.add_argument("--hud-scale", type=float, default=1.5, help="HUD icon window scale (default 1.5; 1 = stock)")
+    ap.add_argument("--hud-scales", default="1.25,1.5", help="HUD icon scales, one optional patch each (default 1.25,1.5)")
     args = ap.parse_args()
+    hud_scales = [float(v) for v in args.hud_scales.split(",") if v.strip()]
 
     arc = Archives(args.tre_dir)
     files, textures = font_files(arc)
 
-    if args.hud_scale != 1:
-        # HUD fonts must exist in the stock "en" locale, so only use sizes it loads.
-        stock_fonts = re.search(r"Fonts_en='([^']*)'", arc.latest(STYLE_MANAGER).decode("latin-1")).group(1)
-        en = re.findall(r"font/(verdana|verdana_bold)_(\d+)\.inc", stock_fonts)
-        default_sizes = sorted(int(s) for f, s in en if f == "verdana")
-        bold_sizes = sorted(int(s) for f, s in en if f == "verdana_bold")
-        for name in HUD_FILES:
-            text = arc.latest(name).decode("latin-1")
-            files[name] = scale_hud(text, args.hud_scale, bold_sizes, default_sizes).encode("latin-1")
+    # HUD fonts must exist in the stock "en" locale, so only use sizes it loads.
+    stock_fonts = re.search(r"Fonts_en='([^']*)'", arc.latest(STYLE_MANAGER).decode("latin-1")).group(1)
+    en = re.findall(r"font/(verdana|verdana_bold)_(\d+)\.inc", stock_fonts)
+    default_sizes = sorted(int(s) for f, s in en if f == "verdana")
+    bold_sizes = sorted(int(s) for f, s in en if f == "verdana_bold")
+    hud = {}
+    for scale in hud_scales:
+        hud[f"hud{round_half_up(scale * 100)}"] = {
+            name: scale_hud(arc.latest(name).decode("latin-1"), scale, bold_sizes, default_sizes).encode("latin-1")
+            for name in HUD_FILES
+        }
 
     # Start clean so files from an earlier run with other settings don't linger.
     for d in (os.path.join(PATCHES, "ui"), os.path.join(PATCHES, "texture", "font")):
         shutil.rmtree(d, ignore_errors=True)
-    for name, data in {**files, **textures}.items():
-        path = os.path.join(PATCHES, name)
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "wb") as f:
-            f.write(data)
+    if os.path.isdir(OPTIONAL_PATCHES):
+        for d in os.listdir(OPTIONAL_PATCHES):
+            if re.fullmatch(r"hud\d+", d):
+                shutil.rmtree(os.path.join(OPTIONAL_PATCHES, d))
+    outputs = [(PATCHES, {**files, **textures})] + [(os.path.join(OPTIONAL_PATCHES, o), f) for o, f in hud.items()]
+    for root, contents in outputs:
+        for name, data in contents.items():
+            path = os.path.join(root, name)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as f:
+                f.write(data)
 
     print(f"Wrote {len(files)} UI file(s) and {len(textures)} restored font texture(s) under {PATCHES}")
-    print(f"  HUD icons x{args.hud_scale}: {', '.join(os.path.basename(n) for n in HUD_FILES)}")
+    for option in hud:
+        print(f"  {os.path.join(OPTIONAL_PATCHES, option)}: {', '.join(os.path.basename(n) for n in HUD_FILES)}")
     return 0
 
 
