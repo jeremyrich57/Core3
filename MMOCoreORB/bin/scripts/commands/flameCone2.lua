@@ -53,7 +53,7 @@ FlameCone2Command = {
 	coneAngle = 45,
 	coneAction = true,
 
-	poolsToDamage = RANDOM_ATTRIBUTE,
+	poolsToDamage = HEALTH_ATTRIBUTE,
 
 	animation = "fire_flame_thrower_cone_2", 
 	animType = GENERATE_INTENSITY,

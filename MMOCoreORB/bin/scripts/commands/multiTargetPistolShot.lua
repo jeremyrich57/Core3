@@ -44,7 +44,7 @@
 MultiTargetPistolShotCommand = {
         name = "multitargetpistolshot",
 
-	damageMultiplier = 4.2,
+	damageMultiplier = 4.5,
 	speedMultiplier = 3.5,
 	healthCostMultiplier = 0.5,
 	actionCostMultiplier = 1.25,

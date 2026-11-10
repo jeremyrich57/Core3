@@ -54,13 +54,28 @@ FireAcidCone1Command = {
 	coneAngle = 45,
 	coneAction = true,
 	
-	poolsToDamage = RANDOM_ATTRIBUTE,
+	poolsToDamage = ACTION_ATTRIBUTE,
 
 	animation = "fire_acid_rifle_single_1", 
 	animType = GENERATE_INTENSITY,
 
 	combatSpam = "fireacidcone1",
 	
+	dotEffects = {
+	  DotEffect(
+		ONFIRE,
+		{"resistance_fire", "fire_resist"},
+		ACTION,
+		true,
+		0,
+		100,
+		100,
+		60,
+		10,
+		2
+	  )
+	},
+
 	weaponType = SPECIALHEAVYWEAPON,
 	
 	range = 16

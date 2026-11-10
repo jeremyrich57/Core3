@@ -51,7 +51,7 @@ FlameSingle1Command = {
 	mindCostMultiplier = 0.5,
 	accuracyBonus = 0,
 
-	poolsToDamage = RANDOM_ATTRIBUTE,
+	poolsToDamage = HEALTH_ATTRIBUTE,
 
 	animation = "fire_flame_thrower_single_1", 
 	animType = GENERATE_INTENSITY,
