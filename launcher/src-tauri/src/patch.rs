@@ -16,6 +16,20 @@ use crate::progress;
 const SUPPORTED_SCHEMA: u32 = 1;
 /// Records which custom TREs the launcher installed, so removed patches get deleted.
 const STATE_FILE: &str = "launcher_patches.json";
+/// Optional patches are named core3_opt_<option>.tre; they're downloaded like the others
+/// but only loaded when the player turns the option on (see tools/patch/build.py).
+const OPTIONAL_PREFIX: &str = "core3_opt_";
+
+/// The patches to load: every required one plus the optional ones in `options`, in priority order.
+pub fn enabled(names: Vec<String>, options: &[String]) -> Vec<String> {
+    names
+        .into_iter()
+        .filter(|name| match name.strip_prefix(OPTIONAL_PREFIX).and_then(|n| n.strip_suffix(".tre")) {
+            Some(option) => options.iter().any(|o| o == option),
+            None => true,
+        })
+        .collect()
+}
 
 #[derive(Deserialize)]
 struct Manifest {
@@ -259,6 +273,13 @@ fn finish(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn optional_patches_load_only_when_selected() {
+        let names = || vec!["core3_opt_hud125.tre".to_string(), "core3_opt_hud150.tre".into(), "core3_custom.tre".into()];
+        assert_eq!(enabled(names(), &[]), vec!["core3_custom.tre"]);
+        assert_eq!(enabled(names(), &["hud150".into()]), vec!["core3_opt_hud150.tre", "core3_custom.tre"]);
+    }
 
     #[test]
     fn parses_manifest_locations() {
