@@ -2612,10 +2612,11 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 		speciesModifier = getSpeciesXpModifier(player->getSpeciesName(), xpType);
 	}
 
-	float buffMultiplier = 1.f;
+	// Food XP buff (Ormachek): flat bonus added to the global multiplier, e.g. 4x + 0.25 = 4.25x. Gains only.
+	float buffBonus = 0.f;
 
-	if (player->hasBuff(BuffCRC::FOOD_XP_INCREASE) && !player->containsActiveSession(SessionFacadeType::CRAFTING))
-		buffMultiplier += player->getSkillModFromBuffs("xp_increase") / 100.f;
+	if (amount > 0 && player->hasBuff(BuffCRC::FOOD_XP_INCREASE) && !player->containsActiveSession(SessionFacadeType::CRAFTING))
+		buffBonus = player->getSkillModFromBuffs("xp_increase") / 100.f;
 
 	int xp = 0;
 
@@ -2623,14 +2624,14 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 
 	if (applyModifiers) {
 		trx.addState("speciesModifier", speciesModifier);
-		trx.addState("buffMultiplier", buffMultiplier);
+		trx.addState("buffBonus", buffBonus);
 		trx.addState("localMultiplier", localMultiplier);
 		// Jedi experience (gains and losses) is excluded from the global multiplier
 		float globalMultiplier = xpType == "jedi_general" ? 1.f : globalExpMultiplier;
 
 		trx.addState("globalExpMultiplier", globalMultiplier);
 
-		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * buffMultiplier * localMultiplier * globalMultiplier));
+		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * localMultiplier * (globalMultiplier + buffBonus)));
 	} else {
 		xp = playerObject->addExperience(trx, xpType, (int)amount);
 	}

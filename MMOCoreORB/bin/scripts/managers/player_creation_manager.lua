@@ -59,6 +59,8 @@ marojMelon = "object/tangible/food/foraged/foraged_fruit_s1.iff"
 
 x31Speeder = "object/tangible/deed/vehicle_deed/landspeeder_x31_deed.iff"
 
+xpFood = "object/tangible/food/crafted/dish_ormachek.iff" -- uncrafted Ormachek: 3 uses of +15% XP for 10 min
+
 professionSpecificItems = {
 	combat_brawler = { brawlerOneHander, brawlerTwoHander, brawlerPolearm },
 	combat_marksman = { marksmanCarbine, marksmanRifle },
@@ -69,4 +71,4 @@ professionSpecificItems = {
 	social_entertainer = { slitherhorn }
 }
 
-commonStartingItems = { marojMelon, survivalKnife, marksmanPistol, x31Speeder, genericTool, mineralTool, chemicalTool }
+commonStartingItems = { marojMelon, survivalKnife, marksmanPistol, x31Speeder, genericTool, mineralTool, chemicalTool, xpFood }
