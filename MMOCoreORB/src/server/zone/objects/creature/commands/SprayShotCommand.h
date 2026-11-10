@@ -22,7 +22,10 @@ public:
 		if (!checkInvalidLocomotions(creature))
 			return INVALIDLOCOMOTION;
 
-		return doCombatAction(creature, target);
+		// Hits all three HAM pools (poolsToDamage in sprayShot.lua); split the damage like fastBlast so the total isn't tripled
+		UnicodeString args = "healthDamageMultiplier=0.33f;actionDamageMultiplier=0.33f;mindDamageMultiplier=0.33f;";
+
+		return doCombatAction(creature, target, args);
 	}
 
 };
