@@ -36,23 +36,34 @@ public:
 		int duration = 0;
 		int efficacy = 0;
 
+		// Duration skill mod total at Master Brawler + the matching elite melee profession (from skills.iff).
+		// The skill mod is scaled so that total maps to MAX_DURATION, keeping each skill box's increment proportional.
+		const int MAX_DURATION = 1800; // 30 minutes
+		int maxDurationMod = 0;
+
 		if (weapon->isUnarmedWeapon()) {
 			duration = creature->getSkillMod("center_of_being_duration_unarmed");
 			efficacy = creature->getSkillMod("unarmed_center_of_being_efficacy");
+			maxDurationMod = 30;
 		} else if (weapon->isOneHandMeleeWeapon()) {
 			duration = creature->getSkillMod("center_of_being_duration_onehandmelee");
 			efficacy = creature->getSkillMod("onehandmelee_center_of_being_efficacy");
+			maxDurationMod = 36;
 		} else if (weapon->isTwoHandMeleeWeapon()) {
 			duration = creature->getSkillMod("center_of_being_duration_twohandmelee");
 			efficacy = creature->getSkillMod("twohandmelee_center_of_being_efficacy");
+			maxDurationMod = 36;
 		} else if (weapon->isPolearmWeaponObject()) {
 			duration = creature->getSkillMod("center_of_being_duration_polearm");
 			efficacy = creature->getSkillMod("polearm_center_of_being_efficacy");
+			maxDurationMod = 35;
 		} else
 			return GENERALERROR;
 
-		if (duration == 0 || efficacy == 0)
+		if (duration <= 0 || efficacy == 0)
 			return GENERALERROR;
+
+		duration = Math::min(MAX_DURATION, duration * MAX_DURATION / maxDurationMod);
 
 		uint32 centerHash = STRING_HASHCODE("centerofbeing");
 
