@@ -16,6 +16,7 @@ type Settings = {
   gameDir: string;
   servers: Server[];
   selectedServer: number;
+  uiTextSize: string;
 };
 
 type Status = { sourceProblem: string | null; installed: boolean };
@@ -248,6 +249,16 @@ function SettingsForm({
           <input value={s.gameDir} onChange={(e) => setS({ ...s, gameDir: e.target.value })} />
           <button type="button" onClick={() => pick("gameDir")}>Browse</button>
         </div>
+      </label>
+
+      <label>
+        In-game text size
+        <select value={s.uiTextSize} onChange={(e) => setS({ ...s, uiTextSize: e.target.value })}>
+          <option value="">Normal</option>
+          <option value="large">Large (about 1.2x)</option>
+          <option value="larger">Larger (about 1.4x)</option>
+        </select>
+        <span className="muted small">For high-resolution screens. Some tight windows may clip text.</span>
       </label>
 
       <div className="servers">

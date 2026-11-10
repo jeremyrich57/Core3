@@ -17,3 +17,10 @@ python3 tools/patch/build.py --install ~/tre   # pack into build/patches/core3_c
 - `datatables/creation/attribute_limits.iff`: stat migration limits rescaled to match `attributeRangeMin/Max/Rounding`
   in `MMOCoreORB/bin/scripts/managers/player_creation_manager.lua`. Regenerate after changing those values:
   `python3 tools/patch/attribute_limits.py ~/tre`. If it doesn't match, the server disables stat migration at startup.
+- `ui/` and `texture/font/`: larger UI for high-resolution screens, from `python3 tools/patch/large_ui.py ~/tre`
+  (see the script's docstring).
+  - `ui/ui_textstylemanager.inc` + `ui/font/l1|l2/`: opt-in larger text, chosen by the client's `[SharedGame] fontLocale`
+    (`l1` ≈1.2x, `l2` ≈1.4x), which the launcher's "In-game text size" setting writes. `texture/font/` restores stock
+    font sizes that patch_10 blanked.
+  - `ui/ui_ground_hud_{toolbar,buttonbar,attribmod,combat_queue}.inc`: toolbar, button bar, buff icons and combat queue
+    scaled 1.5x for everyone (`--hud-scale`).
