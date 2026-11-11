@@ -17,6 +17,9 @@
 --   name        fixed name, leave empty to roll a random one each server start
 --   nameSpecies species used for the random name (human, ithorian, rodian, ...)
 --   title       shown after the name in parentheses
+--
+-- The vendors are the Voss brothers of the Voss Syndicate: each gets his own first name
+-- and the Voss surname (Thalor in Theed).
 --   weaponAdjust optional multipliers applied to every weapon sold, after base stats:
 --                 speed  = attack time multiplier (0.6 = 40% faster)
 --                 damage = min/max damage multiplier (1.15 = 15% more)
@@ -28,6 +31,12 @@
 --               armor can set armorBonus (added to every resist above 0) and/or
 --               resists = { kinetic = 25, ... } to set those resists to a flat value
 --               (kinetic, energy, blast, stun, heat, cold, acid, electricity, lightsaber; max 80)
+--   props       optional stall decoration, spawned with the vendor (transient, can't be picked up):
+--                 template = object template path (furniture, static objects or items)
+--                 x, y     offset in meters from the vendor: x to his right, y in front of him
+--                 z        height above the ground at that spot (e.g. a counter top), default 0
+--                 heading  degrees, relative to the vendor's heading, default 0
+--                 name     optional custom name
 
 -- Padded armor: +25 to every resist via armorBonus, then these set to a flat value
 local paddedResists = { kinetic = 45, blast = 52 }
@@ -35,19 +44,43 @@ local paddedResists = { kinetic = 45, blast = 52 }
 -- Bone armor: flat resists, these replace whatever the loot values give
 local boneResists = { kinetic = 25, energy = 52, electricity = 44, heat = 33, acid = 33 }
 
+-- Theed stall (upscale): rug, a long counter with goods on top, elegant furniture and a Naboo
+-- banner behind the vendor and lamps either side.
+-- Counter top is 1.16m; items are raised so their models rest on it.
+local theedStallProps = {
+	{ template = "object/tangible/furniture/modern/rug_rect_lg_s02.iff", x = 0, y = 0.6, z = -0.065, heading = 90 },
+	{ template = "object/tangible/furniture/modern/bar_piece_straight_s2.iff", x = 0, y = 1.3 },
+
+	-- On the counter
+	{ template = "object/weapon/ranged/pistol/pistol_dl44.iff", x = -1.6, y = 1.3, z = 1.23, heading = 90 },
+	{ template = "object/weapon/ranged/carbine/carbine_e11.iff", x = -0.8, y = 1.3, z = 1.22, heading = 90 },
+	{ template = "object/tangible/dungeon/computer_desktop.iff", x = -0.1, y = 1.3, z = 1.16, heading = 180 }, -- screen toward the vendor
+	{ template = "object/weapon/melee/knife/knife_vibroblade.iff", x = 0.6, y = 1.3, z = 1.23, heading = 90 },
+	{ template = "object/tangible/crafting/station/generic_tool.iff", x = 1.2, y = 1.3, z = 1.16 },
+	{ template = "object/tangible/survey_tool/survey_tool_mineral.iff", x = 1.7, y = 1.3, z = 1.16 },
+
+	-- Behind the vendor
+	{ template = "object/tangible/furniture/elegant/armoire_elegant_s01.iff", x = -1.8, y = -1.4 },
+	{ template = "object/tangible/furniture/elegant/cabinet_s01.iff", x = 1.8, y = -1.4 },
+	{ template = "object/static/structure/naboo/nboo_imprv_bannerpole_s01.iff", x = 0, y = -2.4 },
+	{ template = "object/tangible/furniture/all/frn_all_lamp_free_s02_lit.iff", x = -3.0, y = -1.2 },
+	{ template = "object/tangible/furniture/all/frn_all_lamp_free_s02_lit.iff", x = 3.0, y = -1.2 },
+}
+
 systemVendors = {
 	{
-		key = "theed_quartermaster",
+		key = "theed_merchant",
 		planet = "naboo",
 		template = "object/mobile/vendor/ithorian_male.iff",
 		x = -4849,
 		y = 4091,
 		heading = 0,
-		outfit = "VossQuartermaster",
-		name = "",
+		outfit = "VossMerchant",
+		name = "Thalor Voss",
 		nameSpecies = "ithorian",
-		title = "Quartermaster, Voss Syndicate",
+		title = "Merchant, Voss Syndicate",
 		weaponAdjust = { speed = 0.6, damage = 1.15 },
+		props = theedStallProps,
 
 		stock = {
 			-- Padded armor
