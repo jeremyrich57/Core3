@@ -35,7 +35,7 @@ public:
 		vendorID = message->parseLong(); // vendor
 
 		price = message->parseInt(); // Sale price
-		duration = message->parseInt(); // How long to sell for in minutes
+		duration = message->parseInt(); // How long to sell for in seconds
 
 		message->parseUnicode(description);
 
