@@ -17,7 +17,7 @@ python3 tools/patch/build.py --install ~/tre   # pack into build/patches/core3_c
 - `datatables/creation/attribute_limits.iff`: stat migration limits rescaled to match `attributeRangeMin/Max/Rounding`
   in `MMOCoreORB/bin/scripts/managers/player_creation_manager.lua`. Regenerate after changing those values:
   `python3 tools/patch/attribute_limits.py ~/tre`. If it doesn't match, the server disables stat migration at startup.
-- `datatables/skill/skills.iff`: custom skill point costs (Image Designer boxes, Entertainer's Image Design I-IV and Novice Medic cost 0), from
+- `datatables/skill/skills.iff`: custom skill point costs (Image Designer boxes, Entertainer's Image Design I-IV, Novice Medic, Artisan Survey I-IV, Artisan Business I-IV and Novice Merchant cost 0), from
   `COST_OVERRIDES` in `tools/patch/skill_costs.py`. Regenerate after changing them: `python3 tools/patch/skill_costs.py ~/tre`.
 - `ui/` and `texture/font/`: larger UI for high-resolution screens, from `python3 tools/patch/large_ui.py ~/tre`
   (see the script's docstring).
