@@ -28,6 +28,24 @@ public:
 			return;
 
 		float distanceSq = target->getWorldPosition().squaredDistanceTo2d(sceneObject->getWorldPosition());
+
+		// System vendors greet each player once on approach, and again only after the
+		// player has walked well away. A short shared cooldown keeps crowds from spamming.
+		if (data->hasGreeting()) {
+			const uint64 targetID = target->getObjectID();
+			const float range = data->getGreetingRange();
+			const float forgetRange = range + VendorDataComponent::GREETFORGETRANGE;
+
+			if (distanceSq < range * range) {
+				if (!data->hasBarkTarget(targetID) && data->canGreet())
+					data->performVendorBark(target);
+			} else if (distanceSq > forgetRange * forgetRange && data->hasBarkTarget(targetID)) {
+				data->removeBarkTarget(targetID);
+			}
+
+			return;
+		}
+
 		float checkSq = VendorDataComponent::BARKRANGE * VendorDataComponent::BARKRANGE;
 
 		if (distanceSq < checkSq) {
