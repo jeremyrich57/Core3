@@ -24,6 +24,8 @@ namespace zone {
 }
 }
 
+class VendorDataComponent;
+
 using namespace server::zone;
 
 namespace server {
@@ -99,6 +101,8 @@ private:
 	void spawnProps(SystemVendor* systemVendor, LuaObject& vendorConfig, Zone* zone, const Vector3& origin, float heading, uint64 cellID);
 
 	void dressVendor(CreatureObject* vendor, const String& outfitName);
+
+	void setupGreeting(const String& key, VendorDataComponent* vendorData, LuaObject& vendorConfig);
 
 	bool addListing(SystemVendor* systemVendor, Reference<SystemVendorStockEntry*> entry);
 

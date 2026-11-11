@@ -49,6 +49,11 @@ protected:
 
 	float originalDirection;
 
+	// Transient, system vendors only: greet each player once as they walk up. A random
+	// phrase is picked per greeting, "{name}" is replaced with the player's first name.
+	Vector<String> greetingPhrases;
+	float greetingRange;
+
 	// Transient, stamped only by VendorManager::destroyVendor() so the destroy hooks can tell
 	// a sanctioned removal from one driven straight at the object (exploit, stray command).
 	// Epoch zero means no sanctioned destroy was ever started for this vendor.
@@ -71,6 +76,9 @@ public:
 
 		BARKRANGE           = 15, // 15 Meters
 		BARKINTERVAL        = 60 * 2, // 2 Minutes
+
+		GREETINTERVAL       = 4, // Seconds between two system vendor greetings
+		GREETFORGETRANGE    = 10, // Meters past greetingRange before a player can be greeted again
 
 		// A sanctioned destroy runs start to finish inside one call, anything arriving at the
 		// destroy hooks later than this is a separate removal and gets reported
@@ -289,6 +297,29 @@ public:
 		Locker locker(&adBarkingMutex);
 		vendorBarks.removeAll();
 	}
+
+	void setGreeting(const Vector<String>& phrases, float range) {
+		Locker locker(&adBarkingMutex);
+		greetingPhrases = phrases;
+		greetingRange = range;
+	}
+
+	bool hasGreeting() {
+		Locker locker(&adBarkingMutex);
+		return systemVendor && !greetingPhrases.isEmpty();
+	}
+
+	float getGreetingRange() {
+		Locker locker(&adBarkingMutex);
+		return greetingRange;
+	}
+
+	bool canGreet() {
+		Locker locker(&adBarkingMutex);
+		return (time(0) - lastBark >= GREETINTERVAL);
+	}
+
+	String getGreetingPhrase(CreatureObject* player);
 
 	float getOriginalDirection() {
 		return originalDirection;

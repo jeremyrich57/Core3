@@ -6,6 +6,7 @@
 #include "VendorOutfitManager.h"
 #include "server/zone/ZoneServer.h"
 #include "server/zone/Zone.h"
+#include "server/chat/ChatManager.h"
 #include "server/zone/managers/auction/AuctionManager.h"
 #include "server/zone/managers/auction/AuctionsMap.h"
 #include "server/zone/managers/loot/LootManager.h"
@@ -233,6 +234,8 @@ void SystemVendorManager::spawnVendor(LuaObject& vendorConfig) {
 	vendorData->setInitialized(true);
 	vendorData->setVendorSearchEnabled(false);
 
+	setupGreeting(key, vendorData, vendorConfig);
+
 	Reference<SystemVendor*> systemVendor = new SystemVendor();
 	systemVendor->key = key;
 	systemVendor->vendor = vendor;
@@ -303,7 +306,7 @@ void SystemVendorManager::spawnVendor(LuaObject& vendorConfig) {
 
 	info(true) << "Spawned system vendor " << key << " \"" << displayName << "\" on " << planet
 		<< " at " << x << ", " << z << ", " << y << " with " << systemVendor->listings.size() << " listing(s) and "
-		<< systemVendor->props.size() << " prop(s).";
+		<< systemVendor->props.size() << " prop(s)" << (vendorData->hasGreeting() ? ", greeting on." : ".");
 }
 
 void SystemVendorManager::spawnProps(SystemVendor* systemVendor, LuaObject& vendorConfig, Zone* zone, const Vector3& origin, float heading, uint64 cellID) {
@@ -380,6 +383,50 @@ void SystemVendorManager::spawnProps(SystemVendor* systemVendor, LuaObject& vend
 	}
 
 	props.pop();
+}
+
+void SystemVendorManager::setupGreeting(const String& key, VendorDataComponent* vendorData, LuaObject& vendorConfig) {
+	LuaObject greeting = vendorConfig.getObjectField("greeting");
+
+	if (!greeting.isValidTable()) {
+		greeting.pop();
+		return;
+	}
+
+	Vector<String> phrases;
+	LuaObject messages = greeting.getObjectField("messages");
+
+	if (messages.isValidTable()) {
+		for (int i = 1; i <= messages.getTableSize(); ++i) {
+			const String phrase = messages.getStringAt(i);
+
+			if (!phrase.isEmpty())
+				phrases.add(phrase);
+		}
+	}
+
+	messages.pop();
+
+	const String mood = greeting.getStringField("mood");
+	const String animation = greeting.getStringField("animation");
+	const float range = Math::clamp(2.f, greeting.getFloatField("range", 12.f), 64.f);
+
+	greeting.pop();
+
+	if (phrases.isEmpty()) {
+		error() << "System vendor " << key << ": greeting has no messages.";
+		return;
+	}
+
+	auto chatManager = zoneServer->getChatManager();
+
+	if (!mood.isEmpty() && chatManager != nullptr && chatManager->getMoodID(mood) == 0)
+		error() << "System vendor " << key << ": unknown greeting mood " << mood;
+
+	vendorData->setAdMood(mood);
+	vendorData->setAdAnimation(animation);
+	vendorData->setGreeting(phrases, range);
+	vendorData->setAdBarking(true);
 }
 
 void SystemVendorManager::dressVendor(CreatureObject* vendor, const String& outfitName) {

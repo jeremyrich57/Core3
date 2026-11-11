@@ -37,6 +37,13 @@
 --                 z        height above the ground at that spot (e.g. a counter top), default 0
 --                 heading  degrees, relative to the vendor's heading, default 0
 --                 name     optional custom name
+--   greeting    optional: the vendor turns to face a player who walks up, says one of the
+--               messages and plays an animation, then turns back. Each player is greeted once,
+--               and again only after walking at least 10m past the range.
+--                 messages  = list of lines, one picked at random; {name} = player's first name
+--                 mood      = chat mood (cheerful, happy, friendly, ...), optional
+--                 animation = e.g. wave_greeting, wave_hail, bow, salute1, optional
+--                 range     = meters, default 12
 
 -- Padded armor: +25 to every resist via armorBonus, then these set to a flat value
 local paddedResists = { kinetic = 45, blast = 52 }
@@ -81,6 +88,17 @@ systemVendors = {
 		title = "Merchant, Voss Syndicate",
 		weaponAdjust = { speed = 0.6, damage = 1.15 },
 		props = theedStallProps,
+		greeting = {
+			messages = {
+				"Welcome, {name}! The Voss Syndicate's finest goods, at honest prices.",
+				"Ah, {name}! Come, come, have a look. Everything here is fresh stock.",
+				"Greetings, traveller. Need armor? A good blaster? Thalor has you covered.",
+				"Well met, {name}. Browse as long as you like, friend.",
+			},
+			mood = "cheerful",
+			animation = "wave_greeting",
+			range = 12,
+		},
 
 		stock = {
 			-- Padded armor

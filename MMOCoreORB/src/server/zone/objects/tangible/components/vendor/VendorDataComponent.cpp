@@ -35,6 +35,7 @@ VendorDataComponent::VendorDataComponent() : AuctionTerminalDataComponent(), adB
 	mail1Sent = false;
 	barkMessage = "";
 	lastBark = 0;
+	greetingRange = BARKRANGE;
 	originalDirection = 1000;
 	destroyStartedTime = Time((uint32)0);
 	addSerializableVariables();
@@ -634,7 +635,7 @@ void VendorDataComponent::performVendorBark(SceneObject* target) {
 		}
 
 		SpatialChat* chatMessage = nullptr;
-		String barkMessage = data->getAdPhrase();
+		String barkMessage = data->hasGreeting() ? data->getGreetingPhrase(playerRef) : data->getAdPhrase();
 
 		if (barkMessage.beginsWith("@")) {
 			StringIdChatParameter message;
@@ -658,6 +659,20 @@ void VendorDataComponent::performVendorBark(SceneObject* target) {
 		}
 
 	}, "VendorBarkLambda");
+}
+
+String VendorDataComponent::getGreetingPhrase(CreatureObject* player) {
+	Locker locker(&adBarkingMutex);
+
+	if (greetingPhrases.isEmpty())
+		return "";
+
+	String phrase = greetingPhrases.get(System::random(greetingPhrases.size() - 1));
+
+	if (player != nullptr && phrase.contains("{name}"))
+		phrase = phrase.replaceAll("\\{name\\}", player->getFirstName());
+
+	return phrase;
 }
 
 void VendorDataComponent::scheduleVendorCheckTask(int delay) {
