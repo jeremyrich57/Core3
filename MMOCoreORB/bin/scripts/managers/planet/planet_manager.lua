@@ -40,6 +40,10 @@
 --this exception also makes it possible to release a modified version
 --which carries forward this exception.
 
+--When true, every shuttle (starports, shuttleports and player city shuttleports) stays
+--landed permanently and can be boarded at any time; the timers below are ignored.
+shuttlesAlwaysDocked = true
+
 --Time, in seconds, that a shuttle is away for
 shuttleportAwayTime = 300
 starportAwayTime = 60
