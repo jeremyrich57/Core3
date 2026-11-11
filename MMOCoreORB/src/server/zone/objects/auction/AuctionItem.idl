@@ -334,6 +334,15 @@ class AuctionItem extends ManagedObject {
 		return systemVendorItem;
 	}
 
+	/**
+	 * Fixed-price listings on player vendors never expire; they stay up until sold,
+	 * withdrawn, or the vendor itself is removed. Clients are sent 0 time remaining.
+	 */
+	@read
+	public boolean isNonExpiringVendorSale() {
+		return status == FORSALE && !auction && !onBazaar && !systemVendorItem;
+	}
+
 	@read
 	public boolean isPremiumAuction() {
 		return auctionOptions & OPTION_PREMIUM;

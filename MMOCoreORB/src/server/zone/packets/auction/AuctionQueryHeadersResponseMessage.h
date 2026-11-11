@@ -96,7 +96,10 @@ public:
 
 			insertInt(il->getPrice()); //item cost.
 
-			uint32 expire = il->getExpireTime() > currentTime ? il->getExpireTime() - currentTime : 0;
+			uint32 expire = 0;
+
+			if (!il->isNonExpiringVendorSale() && il->getExpireTime() > currentTime)
+				expire = il->getExpireTime() - currentTime;
 
 			insertInt(expire);
 

@@ -926,6 +926,21 @@ AuctionItem* AuctionManagerImplementation::createVendorItem(CreatureObject* play
 
 	uint64 vendorExpire = time(0) + AuctionManager::VENDOREXPIREPERIOD;
 	uint64 commodityExpire = time(0) + AuctionManager::COMMODITYEXPIREPERIOD;
+	uint64 bazaarExpire = time(0) + AuctionManager::BAZAAREXPIREPERIOD;
+
+	// Bid auctions run for the duration the seller picked in the sell window
+	uint64 auctionExpire = 0;
+
+	if (auction) {
+		uint32 auctionDuration = duration;
+
+		if (auctionDuration < AuctionManager::MINAUCTIONDURATION)
+			auctionDuration = AuctionManager::MINAUCTIONDURATION;
+		else if (auctionDuration > AuctionManager::MAXAUCTIONDURATION)
+			auctionDuration = AuctionManager::MAXAUCTIONDURATION;
+
+		auctionExpire = time(0) + auctionDuration;
+	}
 
 	String playername = player->getFirstName().toLowerCase();
 	String descr = description.toString();
@@ -990,13 +1005,13 @@ AuctionItem* AuctionManagerImplementation::createVendorItem(CreatureObject* play
 			item->setOfferToID(vendorData->getOwnerId());
 			item->setExpireTime(commodityExpire);
 		} else {
-			item->setExpireTime(vendorExpire);
+			item->setExpireTime(auction ? auctionExpire : vendorExpire);
 
 			if(auctionMap->getVendorItemCount(vendor, true) == 0)
 				sendVendorUpdateMail(vendor, false);
 		}
 	} else {
-		item->setExpireTime(commodityExpire);
+		item->setExpireTime(auction ? auctionExpire : bazaarExpire);
 	}
 
 	ObjectManager::instance()->persistObject(item, 0, "auctionitems");
@@ -1668,7 +1683,7 @@ AuctionQueryHeadersResponseMessage* AuctionManagerImplementation::fillAuctionQue
 					continue;
 				}
 
-				if (!item->isAuction() && !item->isSystemVendorItem() && item->getExpireTime() <= now) {
+				if (!item->isAuction() && !item->isSystemVendorItem() && !item->isNonExpiringVendorSale() && item->getExpireTime() <= now) {
 					Core::getTaskManager()->executeTask([=] () {
 						expireSale(item);
 					}, "ExpireSaleLambda");
