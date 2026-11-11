@@ -68,6 +68,10 @@ public:
 
 	void recalculateValues(bool initial);
 
+	// Pins every rolled attribute to the bottom of its loot range (0%), used for
+	// fixed base-quality items such as system vendor stock
+	void setBaseValues();
+
 private:
 	inline void setStaticValues();
 

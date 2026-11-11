@@ -32,6 +32,10 @@ protected:
 
 	bool adBarking;
 
+	// Transient, set by SystemVendorManager for server-owned NPC vendors. These have no
+	// owner, never pay maintenance and only sell their configured stock.
+	bool systemVendor;
+
 	SerializableTime emptyTimer;
 	SerializableTime inactiveTimer;
 
@@ -134,7 +138,18 @@ public:
 			updateUID();
 	}
 
+	inline void setSystemVendor(bool val) {
+		systemVendor = val;
+	}
+
+	inline bool isSystemVendor() const {
+		return systemVendor;
+	}
+
 	inline int getOwnershipRightsOf(CreatureObject* player) {
+		if (systemVendor)
+			return 1; // Browse as a customer of someone else's vendor
+
 		if (!initialized)
 			return 2; // mark not initalized
 
@@ -215,6 +230,9 @@ public:
 	}
 
 	inline bool isOnStrike() {
+		if (systemVendor)
+			return false;
+
 		return maintAmount <= 0;
 	}
 

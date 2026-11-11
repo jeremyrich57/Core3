@@ -200,6 +200,11 @@ class LootManager extends ManagedService implements Logger {
 	@local
 	public native TangibleObject createLootObject(@dereferenced TransactionLog trx, final LootItemTemplate templateObject, int level, boolean maxCondition = false);
 
+	// Creates a loot item with every attribute at the minimum of its range and no
+	// random bonuses, skill mods, dots, condition damage or junk value
+	@local
+	public native TangibleObject createBaseLootObject(@dereferenced TransactionLog trx, final LootItemTemplate templateObject, int persistenceLevel);
+
 	@local
 	public native TangibleObject createShipComponent(@dereferenced TransactionLog trx, final LootItemTemplate templateObject);
 
