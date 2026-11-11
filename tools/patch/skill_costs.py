@@ -36,6 +36,9 @@ COST_OVERRIDES = {
     "social_entertainer_hairstyle": 0,  # Entertainer's Image Design I-IV line
     "social_imagedesigner": 0,  # Image Designer: all boxes
     "science_medic_novice": 0,  # Novice Medic only; the rest of Medic keeps its stock cost
+    "crafting_artisan_survey": 0,  # Artisan Survey I-IV (Novice Artisan keeps its stock 15)
+    "crafting_artisan_business": 0,  # Artisan Business I-IV (Novice Merchant's prerequisite)
+    "crafting_merchant_novice": 0,  # Novice Merchant only; the rest of Merchant keeps its stock cost
 }
 
 # Skill (box) name -> commands appended to its COMMANDS list. Learning the box grants the command (server) and the
