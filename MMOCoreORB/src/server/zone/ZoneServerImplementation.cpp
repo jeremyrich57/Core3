@@ -39,6 +39,7 @@
 #include "server/zone/managers/city/CityManager.h"
 #include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/managers/frs/FrsManager.h"
+#include "server/zone/managers/vendor/SystemVendorManager.h"
 #include "server/chat/ChatManager.h"
 #include "server/zone/managers/ship/ShipManager.h"
 
@@ -364,6 +365,8 @@ void ZoneServerImplementation::startManagers() {
 	}
 
 	auctionManager->initialize();
+
+	SystemVendorManager::instance()->initialize(_this.getReferenceUnsafeStaticCast());
 
 	frsManager = new FrsManager(_this.getReferenceUnsafeStaticCast());
 	frsManager->initialize();

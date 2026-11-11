@@ -31,6 +31,7 @@ VendorDataComponent::VendorDataComponent() : AuctionTerminalDataComponent(), adB
 	maintAmount = 0;
 	awardUsageXP = 0;
 	adBarking = false;
+	systemVendor = false;
 	mail1Sent = false;
 	barkMessage = "";
 	lastBark = 0;
@@ -226,6 +227,9 @@ String VendorDataComponent::getCloseObjectsDump(SceneObject* vendor, int& player
 }
 
 void VendorDataComponent::logUnmanagedRemoval(const String& context) {
+	if (systemVendor)
+		return;
+
 	bool destroyStarted = destroyStartedTime.getTime() != 0;
 	int64 msSinceDestroyStarted = destroyStarted ? destroyStartedTime.miliDifference() : -1;
 

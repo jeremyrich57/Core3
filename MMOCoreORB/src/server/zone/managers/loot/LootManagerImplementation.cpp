@@ -450,6 +450,44 @@ TangibleObject* LootManagerImplementation::createLootObject(TransactionLog& trx,
 	return prototype;
 }
 
+TangibleObject* LootManagerImplementation::createBaseLootObject(TransactionLog& trx, const LootItemTemplate* templateObject, int persistenceLevel) {
+	if (templateObject == nullptr || templateObject->isRandomResourceContainer() || templateObject->isShipComponent()) {
+		return nullptr;
+	}
+
+	const String& directTemplateObject = templateObject->getDirectObjectTemplate();
+
+	trx.addState("lootTemplate", directTemplateObject);
+	trx.addState("lootBaseValues", true);
+
+	ManagedReference<TangibleObject*> prototype = zoneServer->createObject(directTemplateObject.hashCode(), persistenceLevel).castTo<TangibleObject*>();
+
+	if (prototype == nullptr) {
+		error() << "could not create base loot object: " << directTemplateObject;
+		return nullptr;
+	}
+
+	Locker objLocker(prototype);
+
+	prototype->createChildObjects();
+
+	if (!templateObject->getSuppressSerialNumber()) {
+		String serial = craftingManager->generateSerial();
+		prototype->setSerialNumber(serial);
+	}
+
+	setCustomObjectName(prototype, templateObject, baseModifier);
+
+	auto lootValues = LootValues(templateObject, LEVELMIN, 0.f);
+	lootValues.setBaseValues();
+	prototype->updateCraftingValues(&lootValues, true);
+
+	prototype->setJunkDealerNeeded(0);
+	prototype->setJunkValue(0);
+
+	return prototype;
+}
+
 TangibleObject* LootManagerImplementation::createShipComponent(TransactionLog& trx, const LootItemTemplate* itemTemplate) {
 	if (itemTemplate == nullptr || !itemTemplate->isShipComponent()) {
 		return nullptr;
