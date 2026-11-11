@@ -226,6 +226,8 @@ void PlanetManagerImplementation::loadLuaConfig() {
 	if ((starportLandingTime = lua->getGlobalInt("starportLandingTime")) <= 0)
 		starportLandingTime = 14;
 
+	shuttlesAlwaysDocked = lua->getGlobalBoolean("shuttlesAlwaysDocked");
+
 #if DEBUG_TRAVEL
 	// Allow override in config-local for testing
 	shuttleportAwayTime = ConfigManager::instance()->getInt("Core3.PlanetManager.ShuttleportAwayTime", shuttleportAwayTime);
@@ -1481,6 +1483,9 @@ Reference<SceneObject*> PlanetManagerImplementation::createTicket(const String& 
 }
 
 bool PlanetManagerImplementation::checkShuttleStatus(CreatureObject* creature, CreatureObject* shuttle) {
+	if (shuttlesAlwaysDocked)
+		return true;
+
 	Locker locker(_this.getReferenceUnsafeStaticCast());
 
 	Reference<ShuttleDepartureTask*> task = shuttleMap.get(shuttle->getObjectID());
@@ -1587,6 +1592,10 @@ void PlanetManagerImplementation::scheduleShuttle(CreatureObject* shuttle, int s
 	}
 
 	shuttle->setPosture(CreaturePosture::UPRIGHT);
+
+	// Permanently docked: leave the shuttle landed and never schedule a departure.
+	if (shuttlesAlwaysDocked)
+		return;
 
 	Reference<ShuttleDepartureTask*> task = new ShuttleDepartureTask(shuttle);
 
