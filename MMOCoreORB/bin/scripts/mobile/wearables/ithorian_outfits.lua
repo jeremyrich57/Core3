@@ -2395,13 +2395,10 @@ addOutfit(
 
 
 
--- VossQuartermaster (system vendor, Theed)
+-- VossMerchant (system vendor, Theed)
 addOutfit(
 	Outfit(
-	"VossQuartermaster",			-- OutfitName
-	{"object/tangible/wearables/ithorian/ith_shirt_s05.iff",	-- Shirt
-	"object/tangible/wearables/ithorian/ith_vest_s02.iff",	-- Vest
-	"object/tangible/wearables/ithorian/ith_pants_s03.iff",	-- Pants
-	"object/tangible/wearables/ithorian/ith_belt_s05.iff",	-- Belt
-	"object/tangible/wearables/ithorian/ith_bandolier_s02.iff"	-- Bandolier
+	"VossMerchant",			-- OutfitName
+	{"object/tangible/wearables/ithorian/ith_robe_s03.iff",	-- Robe (Ithorian Merchant's Robe)
+	"object/tangible/wearables/ithorian/ith_necklace_s02.iff"	-- Necklace
 }))

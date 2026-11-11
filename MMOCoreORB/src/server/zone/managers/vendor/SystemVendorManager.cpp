@@ -294,11 +294,92 @@ void SystemVendorManager::spawnVendor(LuaObject& vendorConfig) {
 
 	stock.pop();
 
+	locker.release();
+
+	spawnProps(systemVendor, vendorConfig, zone, Vector3(x, y, z), vendorConfig.getFloatField("heading"), cellID);
+
 	Locker guard(&mutex);
 	vendors.put(vendor->getObjectID(), systemVendor);
 
 	info(true) << "Spawned system vendor " << key << " \"" << displayName << "\" on " << planet
-		<< " at " << x << ", " << z << ", " << y << " with " << systemVendor->listings.size() << " listing(s).";
+		<< " at " << x << ", " << z << ", " << y << " with " << systemVendor->listings.size() << " listing(s) and "
+		<< systemVendor->props.size() << " prop(s).";
+}
+
+void SystemVendorManager::spawnProps(SystemVendor* systemVendor, LuaObject& vendorConfig, Zone* zone, const Vector3& origin, float heading, uint64 cellID) {
+	LuaObject props = vendorConfig.getObjectField("props");
+
+	if (!props.isValidTable()) {
+		props.pop();
+		return;
+	}
+
+	ManagedReference<SceneObject*> cell = nullptr;
+
+	if (cellID != 0) {
+		cell = zoneServer->getObject(cellID);
+
+		if (cell == nullptr || !cell->isCellObject()) {
+			props.pop();
+			return;
+		}
+	}
+
+	// Offsets are in the vendor's frame: x to the vendor's right, y in front of him
+	const float headingRad = Math::deg2rad(heading);
+	const float sinH = Math::sin(headingRad);
+	const float cosH = Math::cos(headingRad);
+
+	for (int i = 1; i <= props.getTableSize(); ++i) {
+		lua_State* L = props.getLuaState();
+		lua_rawgeti(L, -1, i);
+		LuaObject propConfig(L);
+
+		const String templatePath = propConfig.getStringField("template");
+		const float right = propConfig.getFloatField("x");
+		const float forward = propConfig.getFloatField("y");
+		const float height = propConfig.getFloatField("z");
+		const float propHeading = propConfig.getFloatField("heading");
+		const String name = propConfig.getStringField("name");
+
+		propConfig.pop();
+
+		ManagedReference<SceneObject*> prop = zoneServer->createObject(templatePath.hashCode(), 0);
+
+		if (prop == nullptr) {
+			error() << "System vendor " << systemVendor->key << ": unable to create prop " << templatePath;
+			continue;
+		}
+
+		Locker locker(prop);
+
+		const float px = origin.getX() + right * cosH + forward * sinH;
+		const float py = origin.getY() - right * sinH + forward * cosH;
+		const float ground = cell == nullptr ? zone->getHeight(px, py) : origin.getZ();
+
+		prop->initializePosition(px, ground + height, py);
+		prop->setDirection(Math::deg2rad(heading + propHeading));
+
+		// Props sit in the world (or a cell) with no owner, so they can't be picked up or moved
+		ContainerPermissions* permissions = prop->getContainerPermissionsForUpdate();
+		permissions->setInheritPermissionsFromParent(false);
+		permissions->setDefaultDenyPermission(ContainerPermissions::MOVECONTAINER);
+		permissions->setDenyPermission("admin", ContainerPermissions::MOVECONTAINER);
+
+		if (!name.isEmpty()) {
+			prop->setCustomObjectName(name, false);
+		}
+
+		if (cell != nullptr) {
+			cell->transferObject(prop, -1, true);
+		} else {
+			zone->transferObject(prop, -1, true);
+		}
+
+		systemVendor->props.add(prop);
+	}
+
+	props.pop();
 }
 
 void SystemVendorManager::dressVendor(CreatureObject* vendor, const String& outfitName) {
@@ -335,7 +416,12 @@ void SystemVendorManager::dressVendor(CreatureObject* vendor, const String& outf
 			}
 		}
 
-		if (!vendor->transferObject(obj, 4)) {
+		String errorDescription;
+		int errorCode = vendor->canAddObject(obj, 4, errorDescription);
+
+		if (errorCode != 0 || !vendor->transferObject(obj, 4)) {
+			error() << "Outfit " << outfitName << ": unable to put " << obj->getObjectTemplate()->getFullTemplateString()
+				<< " on " << vendor->getObjectTemplate()->getFullTemplateString() << " (error " << errorCode << " " << errorDescription << ")";
 			obj->destroyObjectFromDatabase(true);
 		}
 	}

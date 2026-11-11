@@ -69,6 +69,9 @@ public:
 
 	// Keyed by the listed display object's ID, which is what the client buys by
 	VectorMap<uint64, Reference<SystemVendorStockEntry*> > listings;
+
+	// Transient stall decoration (furniture, banners, items) spawned around the vendor
+	Vector<ManagedReference<SceneObject*> > props;
 };
 
 class SystemVendorManager : public Singleton<SystemVendorManager>, public Logger, public Object {
@@ -91,6 +94,9 @@ public:
 
 private:
 	void spawnVendor(LuaObject& vendorConfig);
+
+	// Spawns the vendor's props, positioned relative to the vendor's position and heading
+	void spawnProps(SystemVendor* systemVendor, LuaObject& vendorConfig, Zone* zone, const Vector3& origin, float heading, uint64 cellID);
 
 	void dressVendor(CreatureObject* vendor, const String& outfitName);
 
