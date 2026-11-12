@@ -214,7 +214,7 @@ CitySpecializations = {
 		name = "@city/city:city_spec_cloning",
 		cost = 40000,
 		skillMods = {
-			{"private_spec_cloning", 20}
+			{"private_spec_cloning", 50}
 		}
 	},
 	{--Research Center
@@ -243,6 +243,55 @@ CitySpecializations = {
 		cost = 75000,
 		skillMods = {
 			{"private_defense", 90}
+		}
+	},
+
+	--[[
+		UPGRADE SPECIALIZATIONS
+		Combine stock specializations. Offered to a mayor who has every ability in 'requires'
+		(granted by Politician boxes). 'description' is shown on the confirmation window.
+		Cost is the sum of the components plus ~10%.
+	--]]
+	{--Industrial Center: Manufacturing Center + Research Center
+		name = "Industrial Center",
+		description = "Combines the Manufacturing Center and Research Center specializations: +10 assembly and +15 experimentation for crafters in the city.",
+		cost = 95000,
+		requires = {"city_spec_industry", "city_spec_research"},
+		skillMods = {
+			{"private_spec_assembly", 10},
+			{"private_spec_experimentation", 15}
+		}
+	},
+	{--Wellness Center: Medical Center + Entertainment District
+		name = "Wellness Center",
+		description = "Combines the Medical Center and Entertainment District specializations: +10 medical rating for healers, and +10% performance experience and faster patron buffs for entertainers in the city.",
+		cost = 90000,
+		requires = {"city_spec_doctor", "city_spec_entertainer"},
+		skillMods = {
+			{"private_medical_rating", 10},
+			{"private_spec_entertainer", 10}
+		}
+	},
+	{--Sanctuary: Stronghold + Medical Center + Clone Lab
+		name = "Sanctuary",
+		description = "Combines the Stronghold, Medical Center and Clone Lab specializations: +90 defense for city militia, +10 medical rating for healers, and 50% less cloning wounds and equipment decay at the city's cloning facilities.",
+		cost = 170000,
+		requires = {"city_spec_stronghold", "city_spec_doctor", "city_spec_cloning"},
+		skillMods = {
+			{"private_defense", 90},
+			{"private_medical_rating", 10},
+			{"private_spec_cloning", 50}
+		}
+	},
+	{--Business District: Sample Rich + Improved Job Market
+		name = "Business District",
+		description = "Combines the Sample Rich and Improved Job Market specializations: +20% sample size and better sampling for surveyors, and +15% mission rewards in the city.",
+		cost = 85000,
+		requires = {"city_spec_sample_rich", "city_spec_missions"},
+		skillMods = {
+			{"private_spec_samplesize", 20},
+			{"private_spec_samplerate", 10},
+			{"private_spec_missions", 15}
 		}
 	},
 }
