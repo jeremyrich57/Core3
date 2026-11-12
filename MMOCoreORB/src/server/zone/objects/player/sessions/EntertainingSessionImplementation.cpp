@@ -994,6 +994,9 @@ void EntertainingSessionImplementation::increaseEntertainerBuff(CreatureObject* 
 
 	float buffAcceleration = 1 + ((float)entertainer->getSkillMod("accelerate_entertainer_buff") / 100.f);
 
+	// Entertainment District city specialization: performers in the city build buff duration faster.
+	buffAcceleration *= 1 + ((float)entertainer->getSkillMod("private_spec_entertainer") / 100.f);
+
 	addEntertainerBuffDuration(patron, performance->getType(), 2.0f * buffAcceleration);
 	addEntertainerBuffStrength(patron, performance->getType(), performance->getHealShockWound());
 
@@ -1064,7 +1067,10 @@ void EntertainingSessionImplementation::awardEntertainerExperience() {
 
 			float groupMod = groupBonusCount * 0.05;
 
-			float totalBonus = 1.f + groupMod + audienceMod + applauseMod;
+			// Entertainment District city specialization: bonus performance experience.
+			float cityMod = player->getSkillMod("private_spec_entertainer") / 100.f;
+
+			float totalBonus = 1.f + groupMod + audienceMod + applauseMod + cityMod;
 
 			xpAmount = ceil(xpAmount * totalBonus);
 

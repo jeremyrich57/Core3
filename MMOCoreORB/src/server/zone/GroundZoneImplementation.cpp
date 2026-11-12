@@ -23,6 +23,7 @@
 #include "terrain/ProceduralTerrainAppearance.h"
 #include "server/zone/managers/collision/NavMeshManager.h"
 #include "server/zone/ActiveAreaQuadTree.h"
+#include "server/zone/managers/city/CityManager.h"
 
 GroundZoneImplementation::GroundZoneImplementation(ZoneProcessServer* serv, const String& name) : ZoneImplementation(serv, name) {
 	areaTree = new server::zone::ActiveAreaQuadTree(-8192, -8192, 8192, 8192);
@@ -796,6 +797,12 @@ void GroundZoneImplementation::updateCityRegions() {
 
 		if (seconds < 0) //If the update occurred in the past, force an immediate update.
 			seconds = 0;
+
+		// Pull in updates scheduled under a longer CityUpdateInterval than the current config.
+		int maxSeconds = (CityManagerImplementation::cityUpdateInterval + 30) * 60;
+
+		if (CityManagerImplementation::cityUpdateInterval > 0 && seconds > maxSeconds)
+			seconds = maxSeconds;
 
 		city->setRadius(city->getRadius());
 		city->setLoaded();

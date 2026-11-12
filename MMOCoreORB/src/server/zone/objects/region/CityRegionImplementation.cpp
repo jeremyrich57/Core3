@@ -191,6 +191,20 @@ int CityRegionImplementation::getTimeToUpdate() {
 	return round(nextUpdateTime.miliDifference() / -1000.f);
 }
 
+int CityRegionImplementation::getTimeToMaintenance() {
+	return round(nextMaintenanceTime.miliDifference() / -1000.f);
+}
+
+bool CityRegionImplementation::isMaintenanceDue() const {
+	// 5 minute slack so a rank update landing right on the boundary still collects.
+	return nextMaintenanceTime.miliDifference() >= -5 * 60 * 1000;
+}
+
+void CityRegionImplementation::scheduleNextMaintenance(uint32 seconds) {
+	nextMaintenanceTime.updateToCurrentTime();
+	nextMaintenanceTime.addMiliTime((uint64)seconds * 1000);
+}
+
 void CityRegionImplementation::notifyEnter(SceneObject* object) {
 	if (object->getCityRegion().get() != _this.getReferenceUnsafeStaticCast() && object->isPlayerCreature()) {
 		currentPlayers.increment();

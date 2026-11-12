@@ -48,10 +48,10 @@ which carries forward this exception.
 	GLOBAL CITY SETTINGS
 	--------------------
 --]]
---The amount of time in minutes before the city specialization may be changed again.
-CitySpecializationCooldown = 604800000
+--The amount of time in milliseconds before the city specialization may be changed again.
+CitySpecializationCooldown = 86400000
 
---The amount of time in minutes before another withdrawal from the city treasury may be made.
+--The amount of time in milliseconds before another withdrawal from the city treasury may be made.
 TreasuryWithdrawalCooldown = 86400000
 
 --The number of city update cycles that must pass before mayoral voting process is complete.
@@ -60,8 +60,12 @@ CityVotingCycles = 3
 --The number of city update cyles after which to lock the mayoral voting race registration.
 CityVotingCyclesUntilLocked = 2
 
---The amount of time in minutes before the city performs an update.
-CityUpdateInterval = 10080
+--The amount of time in minutes before the city performs an update (rank changes, elections).
+CityUpdateInterval = 1440
+
+--The amount of time in minutes between city maintenance and income tax collection.
+--Checked on each city update, so it should be a multiple of CityUpdateInterval.
+CityMaintenanceInterval = 10080
 
 --The amount of time in minutes a new city has to gain enough citizens to remain a city.
 NewCityGracePeriod = 1440
@@ -85,7 +89,7 @@ TrainersPerRank = 3
 MissionTerminalsPerRank = 3
 
 -- Amount to discount city maintenance  float.  1 = 100%, .75 =75%, .5=50% etc
-maintenanceDiscount = 1.0
+maintenanceDiscount = 0.35
 
 --[[
 	CITIES ALLOWED PER PLANET
@@ -186,7 +190,7 @@ CityTaxes = {
 CitySpecializations = {
 	{--Sample Rich
 		name = "@city/city:city_spec_sample_rich",
-		cost = 70000,
+		cost = 35000,
 		skillMods = {
 			{"private_spec_samplesize", 20},
 			{"private_spec_samplerate", 10}
@@ -194,49 +198,49 @@ CitySpecializations = {
 	},
 	{--Manufacturing Center
 		name = "@city/city:city_spec_industry",
-		cost = 50000,
+		cost = 25000,
 		skillMods = {
 			{"private_spec_assembly", 10}
 		}
 	},
 	{--Medical Center
 		name = "@city/city:city_spec_doctor",
-		cost = 80000,
+		cost = 40000,
 		skillMods = {
 			{"private_medical_rating", 10}
 		}
 	},
 	{--Clone Lab
 		name = "@city/city:city_spec_cloning",
-		cost = 80000,
+		cost = 40000,
 		skillMods = {
 			{"private_spec_cloning", 20}
 		}
 	},
 	{--Research Center
 		name = "@city/city:city_spec_research",
-		cost = 125000,
+		cost = 60000,
 		skillMods = {
 			{"private_spec_experimentation", 15}
 		}
 	},
 	{--Improved Job Market
 		name = "@city/city:city_spec_missions",
-		cost = 80000,
+		cost = 40000,
 		skillMods = {
 			{"private_spec_missions", 15}
 		}
 	},
 	{--Entertainment District
 		name = "@city/city:city_spec_entertainer",
-		cost = 80000,
+		cost = 40000,
 		skillMods = {
 			{"private_spec_entertainer", 10}
 		}
 	},
 	{--Stronghold
 		name = "@city/city:city_spec_stronghold",
-		cost = 150000,
+		cost = 75000,
 		skillMods = {
 			{"private_defense", 90}
 		}

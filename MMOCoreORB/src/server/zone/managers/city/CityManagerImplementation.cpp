@@ -49,6 +49,7 @@ CityTaxMap CityManagerImplementation::cityTaxes;
 Vector<uint8> CityManagerImplementation::citizensPerRank;
 Vector<uint16> CityManagerImplementation::radiusPerRank;
 int CityManagerImplementation::cityUpdateInterval = 0;
+int CityManagerImplementation::cityMaintenanceInterval = 0;
 int CityManagerImplementation::newCityGracePeriod = 0;
 int CityManagerImplementation::oldCityGracePeriod = 0;
 uint64 CityManagerImplementation::citySpecializationCooldown = 0;
@@ -112,6 +113,10 @@ void CityManagerImplementation::loadLuaConfig() {
 
 	//Only load the static values on the first zone.
 	cityUpdateInterval = lua->getGlobalInt("CityUpdateInterval");
+	cityMaintenanceInterval = lua->getGlobalInt("CityMaintenanceInterval");
+
+	if (cityMaintenanceInterval <= 0)
+		cityMaintenanceInterval = cityUpdateInterval;
 	newCityGracePeriod = lua->getGlobalInt("NewCityGracePeriod");
 	oldCityGracePeriod = lua->getGlobalInt("OldCityGracePeriod");
 	citySpecializationCooldown = lua->getGlobalLong("CitySpecializationCooldown");
@@ -209,6 +214,7 @@ CityRegion* CityManagerImplementation::createCity(CreatureObject* mayor, const S
 	city->setAssessmentPending(true);
 	city->scheduleCitizenAssessment(newCityGracePeriod * 60);
 	city->rescheduleUpdateEvent(cityUpdateInterval * 60); //Minutes
+	city->scheduleNextMaintenance(cityMaintenanceInterval * 60);
 
 	StringIdChatParameter params("city/city", "new_city_body");
 	params.setTO(mayor->getObjectID());
@@ -799,9 +805,14 @@ void CityManagerImplementation::processCityUpdate(CityRegion* city) {
 
 		city->rescheduleUpdateEvent((cityUpdateInterval + System::random(30)) * 60);
 
-		processIncomeTax(city);
+		// Rank updates can tick faster than maintenance; tax and upkeep only run when the maintenance clock is due.
+		if (city->isMaintenanceDue()) {
+			city->scheduleNextMaintenance(cityMaintenanceInterval * 60);
 
-		deductCityMaintenance(city);
+			processIncomeTax(city);
+
+			deductCityMaintenance(city);
+		}
 
 	} catch (Exception& e) {
 		error(e.getMessage() + "in CityManagerImplementation::processCityUpdate");
@@ -1647,12 +1658,7 @@ void CityManagerImplementation::sendCityAdvancement(CityRegion* city, CreatureOb
 	creature->sendSystemMessage(params);
 }
 
-String CityManagerImplementation::getNextUpdateTimeString(CityRegion* city) {
-	if (city == nullptr)
-		return "";
-
-	int seconds = city->getTimeToUpdate();
-
+static String formatCityTimeRemaining(int seconds) {
 	int days = floor(seconds / 86400);
 	seconds -= days * 86400;
 
@@ -1707,6 +1713,13 @@ String CityManagerImplementation::getNextUpdateTimeString(CityRegion* city) {
 		updateStr = "Now";
 
 	return updateStr;
+}
+
+String CityManagerImplementation::getNextUpdateTimeString(CityRegion* city) {
+	if (city == nullptr)
+		return "";
+
+	return formatCityTimeRemaining(city->getTimeToUpdate());
 }
 
 void CityManagerImplementation::promptRegisterCity(CityRegion* city, CreatureObject* creature, SceneObject* terminal) {
@@ -2078,6 +2091,7 @@ void CityManagerImplementation::sendMaintenanceReport(CityRegion* city, Creature
 	}
 
 	maintList->addMenuItem("@city/city:tot_maint " + String::valueOf(totalcost) + " @city/city:credits"); // Total Maintenance:
+	maintList->addMenuItem("Next Maintenance Due: " + formatCityTimeRemaining(city->getTimeToMaintenance()));
 
 	ghost->addSuiBox(maintList);
 	creature->sendMessage(maintList->generateMessage());
