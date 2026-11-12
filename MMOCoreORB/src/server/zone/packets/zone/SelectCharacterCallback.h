@@ -14,6 +14,7 @@
 #include "server/zone/SpaceZone.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/managers/player/PermissionLevelList.h"
+#include "conf/ConfigManager.h"
 #include "server/login/account/Account.h"
 #include "server/login/account/AccountManager.h"
 #include "server/zone/managers/skill/SkillManager.h"
@@ -422,6 +423,13 @@ public:
 		// Sync existing characters with their account's staff level (admin_level in the accounts table);
 		// otherwise it is only applied at character creation
 		syncAccountAdminLevel(player, ghost, zoneServer);
+
+		// Raise characters to the configured lot cap (the persisted default is 10). Never lowers,
+		// so lots granted with /adjustLotCount are kept.
+		const int maxLots = Math::min(ConfigManager::instance()->getInt("Core3.MaxLotsPerCharacter", 10), 255);
+
+		if (ghost->getMaximumLots() < maxLots)
+			ghost->setMaximumLots(maxLots);
 
 		auto chatManager = zoneServer->getChatManager();
 

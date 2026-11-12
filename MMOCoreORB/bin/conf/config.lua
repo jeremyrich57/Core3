@@ -238,6 +238,7 @@ Core3 = {
 	------Character Config------
 	CleanupMailCount = 25000,
 	DeleteCharacters = 10, -- How often in minutes to purge deleted characters
+	MaxLotsPerCharacter = 20, -- Structure lots per character; existing characters are raised on login (never lowered)
 
 	PlayerCreationManager = {
 		MaxCharactersPerGalaxy = 10, -- Characters allowed per account on this galaxy
