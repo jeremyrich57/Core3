@@ -10,6 +10,7 @@
 #include "server/zone/managers/crafting/CraftingManager.h"
 #include "server/zone/managers/crafting/ComponentMap.h"
 #include "server/zone/objects/tangible/terminal/characterbuilder/CharacterBuilderTerminal.h"
+#include "ArmorTestKit.h"
 
 
 class ObjectCommand : public QueueCommand {
@@ -216,6 +217,12 @@ public:
 				creature->sendSystemMessage("Number of Exceptionals Looted: " + String::valueOf(lootManager->getExceptionalLooted()));
 				creature->sendSystemMessage("Number of Magical Looted: " + String::valueOf(lootManager->getYellowLooted()));
 
+			} else if (commandType.beginsWith("armortestkit")) {
+				ArmorTestKit::give(server->getZoneServer(), creature);
+			} else if (commandType.beginsWith("ristestkit")) {
+				ArmorTestKit::giveRis(server->getZoneServer(), creature);
+			} else if (commandType.beginsWith("mandoarmor")) {
+				ArmorTestKit::giveMandalorian(server->getZoneServer(), creature);
 			} else if (commandType.beginsWith("characterbuilder")) {
 				if (!ConfigManager::instance()->getBool("Core3.CharacterBuilderEnabled", true)) {
 					creature->sendSystemMessage("characterbuilder is not enabled on this server.");
@@ -256,6 +263,9 @@ public:
 			creature->sendSystemMessage("SYNTAX: /object createarealoot <loottemplate> [<range>] [<level>]");
 			creature->sendSystemMessage("SYNTAX: /object checklooted");
 			creature->sendSystemMessage("SYNTAX: /object characterbuilder");
+			creature->sendSystemMessage("SYNTAX: /object armortestkit");
+			creature->sendSystemMessage("SYNTAX: /object ristestkit");
+			creature->sendSystemMessage("SYNTAX: /object mandoarmor");
 
 			return INVALIDPARAMETERS;
 		}
