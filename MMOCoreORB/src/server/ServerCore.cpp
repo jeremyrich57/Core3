@@ -6,6 +6,13 @@
 
 #include <type_traits>
 
+#ifndef PLATFORM_WIN
+#include <fcntl.h>
+#include <poll.h>
+#include <signal.h>
+#include <unistd.h>
+#endif
+
 #include "db/MySqlDatabase.h"
 #include "db/ServerDatabase.h"
 #include "db/MantisDatabase.h"
@@ -54,6 +61,32 @@ namespace coredetail {
 
 		void run() override;
 	};
+
+#ifndef PLATFORM_WIN
+	// SIGTERM (and SIGINT outside "service" mode) run the same shutdown as the
+	// console "exit" command: disconnect players and save everything. The handler
+	// only writes to a pipe (async-signal-safe); ShutdownSignalService turns that
+	// into a queued console command. SA_RESETHAND makes a second signal kill the
+	// process immediately, as before.
+	static int shutdownSignalPipe[2] = {-1, -1};
+
+	static void shutdownSignalHandler(int sig) {
+		const char c = static_cast<char>(sig);
+		const auto ret = write(shutdownSignalPipe[1], &c, 1);
+		(void)ret;
+	}
+
+	class ShutdownSignalService final : public ServiceThread {
+		ServerCore* core;
+
+	public:
+		ShutdownSignalService(ServerCore* serverCoreInstance);
+
+		static bool installHandlers(bool includeSigInt);
+
+		void run() override;
+	};
+#endif
 
 #ifdef PLATFORM_WIN
 	static const char* EngineConfigName = "core3engine_windows";
@@ -1081,6 +1114,17 @@ void ServerCore::handleCommands() {
 	auto reader = coredetail::ConsoleReaderService(instance);
 	reader.start(true);
 
+#ifndef PLATFORM_WIN
+	auto signalService = coredetail::ShutdownSignalService(instance);
+	bool signalServiceStarted = false;
+
+	// In "service" mode the parent watchdog uses SIGINT to kill a crashed child.
+	if (coredetail::ShutdownSignalService::installHandlers(!arguments.contains("service"))) {
+		signalService.start(true);
+		signalServiceStarted = true;
+	}
+#endif
+
 	while (handleCmds) {
 		Thread::sleep(500);
 
@@ -1116,9 +1160,19 @@ void ServerCore::handleCommands() {
 
 	reader.setRunning(false);
 
+#ifndef PLATFORM_WIN
+	if (signalServiceStarted)
+		signalService.setRunning(false);
+#endif
+
 	Thread::yield();
 
 	reader.join();
+
+#ifndef PLATFORM_WIN
+	if (signalServiceStarted)
+		signalService.join();
+#endif
 
 	consoleCommandPipe.close();
 
@@ -1141,6 +1195,56 @@ int ServerCore::getSchemaVersion() {
 
 coredetail::ConsoleReaderService::ConsoleReaderService(ServerCore* serverCoreInstance) : ServiceThread("ConsoleReader"), core(serverCoreInstance) {
 }
+
+#ifndef PLATFORM_WIN
+coredetail::ShutdownSignalService::ShutdownSignalService(ServerCore* serverCoreInstance) : ServiceThread("ShutdownSignal"), core(serverCoreInstance) {
+}
+
+bool coredetail::ShutdownSignalService::installHandlers(bool includeSigInt) {
+	if (shutdownSignalPipe[0] == -1) {
+		if (pipe2(shutdownSignalPipe, O_CLOEXEC | O_NONBLOCK) != 0) {
+			Logger::console.error() << "could not create shutdown signal pipe, SIGTERM will not save";
+
+			return false;
+		}
+	}
+
+	struct sigaction action = {};
+	action.sa_handler = shutdownSignalHandler;
+	action.sa_flags = SA_RESTART | SA_RESETHAND;
+	sigemptyset(&action.sa_mask);
+
+	sigaction(SIGTERM, &action, nullptr);
+
+	if (includeSigInt)
+		sigaction(SIGINT, &action, nullptr);
+
+	return true;
+}
+
+void coredetail::ShutdownSignalService::run() {
+	setReady(true);
+
+	while (doRun.get(std::memory_order_seq_cst)) {
+		struct pollfd pfd = {};
+		pfd.fd = shutdownSignalPipe[0];
+		pfd.events = POLLIN;
+
+		if (poll(&pfd, 1, 1000) <= 0 || !(pfd.revents & POLLIN))
+			continue;
+
+		char sig = 0;
+
+		if (read(shutdownSignalPipe[0], &sig, 1) != 1)
+			continue;
+
+		core->info(true) << "Received signal " << (int)sig
+			<< ", shutting down and saving (send it again to kill immediately)";
+
+		core->queueConsoleCommand("exit");
+	}
+}
+#endif
 
 bool coredetail::ConsoleReaderService::inputAvailable() const {
 #ifndef PLATFORM_WIN
