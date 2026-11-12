@@ -11,6 +11,7 @@
 #include "server/zone/managers/crafting/ComponentMap.h"
 #include "server/zone/objects/tangible/terminal/characterbuilder/CharacterBuilderTerminal.h"
 #include "ArmorTestKit.h"
+#include "VehicleTestKit.h"
 
 
 class ObjectCommand : public QueueCommand {
@@ -223,6 +224,8 @@ public:
 				ArmorTestKit::giveRis(server->getZoneServer(), creature);
 			} else if (commandType.beginsWith("mandoarmor")) {
 				ArmorTestKit::giveMandalorian(server->getZoneServer(), creature);
+			} else if (commandType == "barckit" || commandType == "stapkit") {
+				VehicleTestKit::handle(server->getZoneServer(), creature, target, commandType);
 			} else if (commandType.beginsWith("characterbuilder")) {
 				if (!ConfigManager::instance()->getBool("Core3.CharacterBuilderEnabled", true)) {
 					creature->sendSystemMessage("characterbuilder is not enabled on this server.");
@@ -266,6 +269,7 @@ public:
 			creature->sendSystemMessage("SYNTAX: /object armortestkit");
 			creature->sendSystemMessage("SYNTAX: /object ristestkit");
 			creature->sendSystemMessage("SYNTAX: /object mandoarmor");
+			creature->sendSystemMessage("SYNTAX: /object barckit|stapkit (to your target, or yourself)");
 
 			return INVALIDPARAMETERS;
 		}

@@ -24,7 +24,11 @@
  * Quantities cover three full sets of every family.
  *   /object mandoarmor    - a full set of Mandalorian armor
  */
+class VehicleTestKit;
+
 class ArmorTestKit {
+	friend class VehicleTestKit;
+
 	struct KitResource {
 		const char* type;
 		int quantity;
@@ -124,16 +128,60 @@ class ArmorTestKit {
 		return itemsGiven;
 	}
 
-	// Crafts one prototype from the draft schematic with every experimental attribute at 100%
-	// (same path as /generateCraftedItem) and packs it into a factory crate of the given size.
+	// Packs a max-quality prototype of the draft schematic into a factory crate of the given size.
 	static bool giveCraftedCrate(ZoneServer* zoneServer, CreatureObject* creature, SceneObject* inventory, const KitCrate& entry, const String& kitName) {
 		const String path = entry.draftSchematic;
+		ManagedReference<TangibleObject*> prototype = craftMaxQuality(zoneServer, creature, path, kitName);
+
+		if (prototype == nullptr)
+			return false;
+
+		Locker locker(prototype);
+
+		ManagedReference<DraftSchematic*> draftSchematic = SchematicMap::instance()->get(path.hashCode());
+		String crateType = draftSchematic != nullptr ? draftSchematic->getFactoryCrateType() : "object/factory/factory_crate_generic_items.iff";
+		ManagedReference<FactoryCrate*> crate = prototype->createFactoryCrate(entry.quantity, crateType, true);
+
+		if (crate == nullptr) {
+			creature->sendSystemMessage(kitName + ": could not crate " + path);
+			prototype->destroyObjectFromDatabase(true);
+			return false;
+		}
+
+		Locker crateLocker(crate, prototype);
+
+		crate->setUseCount(entry.quantity);
+
+		if (!inventory->transferObject(crate, -1, true)) {
+			crate->destroyObjectFromDatabase(true);
+			return false;
+		}
+
+		crate->sendTo(creature, true);
+		return true;
+	}
+
+	static int giveCrates(ZoneServer* zoneServer, CreatureObject* creature, SceneObject* inventory, const KitCrate* crates, int count, const String& kitName) {
+		int cratesGiven = 0;
+
+		for (int i = 0; i < count; ++i) {
+			if (giveCraftedCrate(zoneServer, creature, inventory, crates[i], kitName))
+				++cratesGiven;
+		}
+
+		return cratesGiven;
+	}
+
+public:
+	// Crafts one item from the draft schematic with every experimental attribute at 100% (same path as
+	// /generateCraftedItem), credited to creature. Not placed in any container; returns nullptr on failure.
+	static ManagedReference<TangibleObject*> craftMaxQuality(ZoneServer* zoneServer, CreatureObject* creature, const String& path, const String& kitName) {
 		ManagedReference<CraftingManager*> craftingManager = zoneServer->getCraftingManager();
 		ManagedReference<DraftSchematic*> draftSchematic = zoneServer->createObject(path.hashCode(), 0).castTo<DraftSchematic*>();
 
 		if (craftingManager == nullptr || draftSchematic == nullptr || !draftSchematic->isValidDraftSchematic()) {
 			creature->sendSystemMessage(kitName + ": invalid draft schematic " + path);
-			return false;
+			return nullptr;
 		}
 
 		ManagedReference<ManufactureSchematic*> manuSchematic = draftSchematic->createManufactureSchematic().castTo<ManufactureSchematic*>();
@@ -147,7 +195,7 @@ class ArmorTestKit {
 				prototype->destroyObjectFromDatabase(true);
 			}
 
-			return false;
+			return nullptr;
 		}
 
 		Locker locker(prototype);
@@ -185,40 +233,9 @@ class ArmorTestKit {
 		prototype->setSerialNumber(serial);
 		prototype->updateToDatabase();
 
-		String crateType = draftSchematic->getFactoryCrateType();
-		ManagedReference<FactoryCrate*> crate = prototype->createFactoryCrate(entry.quantity, crateType, true);
-
-		if (crate == nullptr) {
-			creature->sendSystemMessage(kitName + ": could not crate " + path);
-			prototype->destroyObjectFromDatabase(true);
-			return false;
-		}
-
-		Locker crateLocker(crate, prototype);
-
-		crate->setUseCount(entry.quantity);
-
-		if (!inventory->transferObject(crate, -1, true)) {
-			crate->destroyObjectFromDatabase(true);
-			return false;
-		}
-
-		crate->sendTo(creature, true);
-		return true;
+		return prototype;
 	}
 
-	static int giveCrates(ZoneServer* zoneServer, CreatureObject* creature, SceneObject* inventory, const KitCrate* crates, int count, const String& kitName) {
-		int cratesGiven = 0;
-
-		for (int i = 0; i < count; ++i) {
-			if (giveCraftedCrate(zoneServer, creature, inventory, crates[i], kitName))
-				++cratesGiven;
-		}
-
-		return cratesGiven;
-	}
-
-public:
 	/**
 	 * Armorsmith armor (every crafted family except RIS): max-quality resources for the armor pieces themselves,
 	 * and factory crates of max-quality segments and cloth components, so nothing below the piece needs crafting.
