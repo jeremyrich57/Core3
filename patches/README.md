@@ -33,6 +33,10 @@ python3 tools/patch/build.py --install ~/tre   # pack into build/patches/core3_c
   `monster_detail`, `pet_deed`, `item_n`, `item_d`, `craft_vehicle_ingredients_n/_d`, `craft_item_ingredients_n/_d`)
   with only these vehicles' rows added. `misc/object_template_crc_string_table.iff` gets
   the imported object templates added; the client can't show an object whose template CRC isn't in it. Also the generic speeder power plant their schematics use (`COMPONENTS`). Server templates are in `MMOCoreORB/bin/scripts/object/` as usual.
+- `object/mobile/vehicle/shared_*.iff`: vehicle top/walk speed, acceleration and turn rate, from `STATS` in
+  `tools/patch/vehicle_stats.py` (stock vehicles read from the TREs, the imported BARC/STAP edited in place).
+  Regenerate after changing them, or after re-running `import_aotc.py`: `python3 tools/patch/vehicle_stats.py ~/tre`.
+  Existing vehicles pick up new speeds the next time they're called (`VehicleObjectImplementation::notifyInsertToZone`).
 
 ## Optional patches (`patches-opt/`)
 
