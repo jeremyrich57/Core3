@@ -26,12 +26,12 @@ python3 tools/patch/build.py --install ~/tre   # pack into build/patches/core3_c
     font sizes that patch_10 blanked.
   - The bigger HUD icons are optional patches in `patches-opt/` (below).
 
-- BARC and STAP speeders, imported from the SWG AotC client by `python3 tools/patch/import_aotc.py /mnt/c/SWGAoTC ~/tre`
+- BARC and STAP speeders and the speeder power plant, imported from the SWG AotC client by `python3 tools/patch/import_aotc.py /mnt/c/SWGAoTC ~/tre`
   (vehicles listed in `VEHICLES` in the script): their models, textures, shaders, sounds and object templates
   (`appearance/`, `texture/`, `shader/`, `sample/`, `sound/`, `clientdata/vehicle/`, `object/`), plus the stock
   `datatables/mount/*.iff`, `appearance/lat/all_m.lat` (rider poses) and `string/en/` tables (`monster_name`,
-  `monster_detail`, `pet_deed`, `item_n`, `item_d`, `craft_vehicle_ingredients_n/_d`) with only these vehicles' rows
-  added. Server templates are in `MMOCoreORB/bin/scripts/object/` as usual.
+  `monster_detail`, `pet_deed`, `item_n`, `item_d`, `craft_vehicle_ingredients_n/_d`, `craft_item_ingredients_n/_d`)
+  with only these vehicles' rows added. Also the generic speeder power plant their schematics use (`COMPONENTS`). Server templates are in `MMOCoreORB/bin/scripts/object/` as usual.
 
 ## Optional patches (`patches-opt/`)
 
