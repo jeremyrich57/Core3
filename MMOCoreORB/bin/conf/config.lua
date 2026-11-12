@@ -249,7 +249,7 @@ Core3 = {
 	},
 
 	PlayerCreationManager = {
-		MaxCharactersPerGalaxy = 10, -- Characters allowed per account on this galaxy
+		MaxCharactersPerGalaxy = 3, -- Characters allowed per account on this galaxy
 		CharacterCreationCooldown = 60, -- Minutes an account must wait between character creations (staff exempt); 0 = no limit
 	},
 
