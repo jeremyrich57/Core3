@@ -623,16 +623,20 @@ void SlicingSessionImplementation::handleArmorSlice() {
 	uint8 min = 0;
 	uint8 max = 0;
 
+	// Effectiveness: 15-20% (III), 15-30% (IV), 20-35% (master)
+	// Encumbrance:    5-30% (III), 15-40% (IV), 20-45% (master)
 	switch (sliceSkill) {
 	case 5:
-		min += (sliceType == 0) ? 6 : 5;
-		max += 5;
+		min = 20;
+		max = (sliceType == 0) ? 35 : 45;
+		break;
 	case 4:
-		min += (sliceType == 0) ? 0 : 10;
-		max += 10;
+		min = 15;
+		max = (sliceType == 0) ? 30 : 40;
+		break;
 	case 3:
-		min += 5;
-		max += (sliceType == 0) ? 20 : 30;
+		min = (sliceType == 0) ? 15 : 5;
+		max = (sliceType == 0) ? 20 : 30;
 		break;
 	default:
 		return;

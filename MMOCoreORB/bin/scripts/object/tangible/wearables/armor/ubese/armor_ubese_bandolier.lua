@@ -97,7 +97,9 @@ object_tangible_wearables_armor_ubese_armor_ubese_bandolier = object_tangible_we
 				"object/mobile/vendor/zabrak_male.iff" },
 
 	-- Damage types in WeaponObject
-	vulnerability = NONE,
+	vulnerability = HEAT + COLD + STUN + LIGHTSABER,
+
+	specialResists = KINETIC + ELECTRICITY,
 
 	-- These are default Blue Frog stats
 	healthEncumbrance = 1,

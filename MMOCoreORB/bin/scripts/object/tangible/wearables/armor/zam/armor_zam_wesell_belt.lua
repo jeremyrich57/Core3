@@ -96,7 +96,9 @@ object_tangible_wearables_armor_zam_armor_zam_wesell_belt = object_tangible_wear
 				"object/mobile/vendor/zabrak_male.iff" },
 
 	-- Damage types in WeaponObject
-	vulnerability = ACID + ENERGY + STUN + LIGHTSABER,
+	vulnerability = COLD + ELECTRICITY + STUN + LIGHTSABER,
+
+	specialResists = HEAT + ACID,
 
 	-- These are default Blue Frog stats
 	healthEncumbrance = 1,

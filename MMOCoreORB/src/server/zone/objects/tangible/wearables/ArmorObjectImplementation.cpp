@@ -67,6 +67,58 @@ void ArmorObjectImplementation::notifyLoadFromDatabase() {
 
 	if (rating != LIGHT && templateObject->getClientTemplateFileName().contains("armor_bounty_hunter_"))
 		rating = LIGHT;
+
+	applyArmorProfileMigration();
+}
+
+namespace {
+	// Armor family profiles (vulnerabilities and native special resists) live on the wearable armor templates.
+	ArmorObjectTemplate* getWearableArmorTemplate(SharedObjectTemplate* templateData) {
+		if (templateData == nullptr || !templateData->isArmorObjectTemplate())
+			return nullptr;
+
+		if (!templateData->getFullTemplateString().beginsWith("object/tangible/wearables/armor/"))
+			return nullptr;
+
+		return static_cast<ArmorObjectTemplate*>(templateData);
+	}
+}
+
+void ArmorObjectImplementation::applyArmorProfileMigration() {
+	ArmorObjectTemplate* armorTemplate = getWearableArmorTemplate(templateObject.get());
+
+	if (armorTemplate == nullptr)
+		return;
+
+	// Bring existing armor in line with its family profile. Idempotent, so it is safe on every load.
+	vulnerabilites = armorTemplate->getVulnerabilites();
+
+	if (armorTemplate->getFullTemplateString().contains("/armor/mandalorian/")) {
+		// Death Watch Mandalorian is never crafted: its resists come straight from the template
+		specialResists = armorTemplate->getSpecialResists();
+
+		kinetic = armorTemplate->getKinetic();
+		energy = armorTemplate->getEnergy();
+		electricity = armorTemplate->getElectricity();
+		stun = armorTemplate->getStun();
+		blast = armorTemplate->getBlast();
+		heat = armorTemplate->getHeat();
+		cold = armorTemplate->getCold();
+		acid = armorTemplate->getAcid();
+		lightSaber = armorTemplate->getLightSaber();
+	} else {
+		specialResists |= armorTemplate->getSpecialResists();
+	}
+}
+
+int ArmorObjectImplementation::getNativeSpecialResists() const {
+	ArmorObjectTemplate* armorTemplate = getWearableArmorTemplate(templateObject.get());
+
+	if (armorTemplate != nullptr)
+		return armorTemplate->getSpecialResists();
+
+	// Non-wearable armor (PSGs etc.) keeps its specials uncapped by family rules
+	return specialResists;
 }
 
 void ArmorObjectImplementation::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
@@ -276,34 +328,47 @@ void ArmorObjectImplementation::fillAttributeList(AttributeListMessage* alm, Cre
 }
 
 bool ArmorObjectImplementation::isVulnerable(int type) const {
-	return isBroken() || (!isSpecial(type) && (vulnerabilites & type));
+	if (isBroken())
+		return true;
+
+	if (!(vulnerabilites & type))
+		return false;
+
+	// Stun is the one vulnerability a layer can patch (up to Core3.Armor.MaxStunLayerResist)
+	return !(type == SharedWeaponObjectTemplate::STUN && isSpecial(type));
 }
 
 float ArmorObjectImplementation::getTypeValue(int type, float value) const {
-	int newValue = 0;
+	auto config = ConfigManager::instance();
 
-	if (vulnerabilites & type)
-		newValue = value;
-
-	else if (isSpecial(type)) {
-		newValue = specialProtection + value;
-
-		if (newValue > 80)
-			newValue = 80;
-	} else {
-		newValue = baseProtection + value;
-		newValue *= effectivenessSlice;
-
-		if(sliced && effectivenessSlice > 1) {
-			if(newValue > 90)
-				newValue = 90;
-		} else {
-			if(newValue > 80)
-				newValue = 80;
+	if (vulnerabilites & type) {
+		if (type == SharedWeaponObjectTemplate::STUN && isSpecial(type)) {
+			const int stunLayerCap = config->getInt("Core3.Armor.MaxStunLayerResist", 40);
+			return (int)Math::min(specialProtection + value, (float)stunLayerCap);
 		}
+
+		return (int)value;
 	}
 
-	return newValue;
+	const int baseCap = config->getInt("Core3.Armor.MaxBaseResist", 60);
+	const bool effectivenessSliced = sliced && effectivenessSlice > 1;
+	const int baseLimit = effectivenessSliced ? config->getInt("Core3.Armor.MaxSlicedResist", 75) : baseCap;
+
+	const int baseValue = (int)Math::min((baseProtection + value) * effectivenessSlice, (float)baseLimit);
+
+	if (!isSpecial(type))
+		return baseValue;
+
+	// A special is never weaker than the armor's unsliced base, and slicing does not apply to it
+	const float specialValue = Math::max(specialProtection, baseProtection) + value;
+
+	if (getNativeSpecialResists() & type) {
+		const int specialCap = config->getInt("Core3.Armor.MaxSpecialResist", 80);
+		return (int)Math::min(specialValue, (float)specialCap);
+	}
+
+	// Specials outside the family profile (from layers or enhancements) only reach the base cap
+	return Math::max(baseValue, (int)Math::min(specialValue, (float)baseCap));
 }
 
 int ArmorObjectImplementation::handleObjectMenuSelect(CreatureObject* player, byte selectedID) {
@@ -403,6 +468,11 @@ void ArmorObjectImplementation::updateCraftingValues(CraftingValues* values, boo
 
 void ArmorObjectImplementation::calculateSpecialProtection(CraftingValues* craftingValues) {
 	specialResists = ((int)(craftingValues->getCurrentValue("armor_special_type")));
+
+	ArmorObjectTemplate* armorTemplate = getWearableArmorTemplate(templateObject.get());
+
+	if (armorTemplate != nullptr)
+		specialResists |= armorTemplate->getSpecialResists();
 
 	for (int i = 0; i <= 8; ++i) {
 		int type = pow((float)2,i);

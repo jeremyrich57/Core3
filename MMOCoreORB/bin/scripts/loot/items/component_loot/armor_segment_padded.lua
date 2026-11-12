@@ -11,7 +11,7 @@ armor_segment_padded = {
 		{"armor_action_encumbrance",12,1,0},
 		{"armor_mind_encumbrance",6,1,0},
 		{"armor_rating",1,1,0, true},
-		{"armor_special_type",4,4,0, true},
+		{"armor_special_type",68,68,0, true},
 		{"armor_special_effectiveness",5,15,0},
 		{"armor_special_integrity",100,100,0, true},
 		{"useCount",1,11,0},
