@@ -240,17 +240,17 @@ Core3 = {
 	DeleteCharacters = 10, -- How often in minutes to purge deleted characters
 	MaxLotsPerCharacter = 20, -- Structure lots per character; existing characters are raised on login (never lowered)
 
+	PlayerCreationManager = {
+		MaxCharactersPerGalaxy = 3, -- Characters allowed per account on this galaxy
+		CharacterCreationCooldown = 60, -- Minutes an account must wait between character creations (staff exempt); 0 = no limit
+	},
+
 	------Armor Config------
 	Armor = {
 		MaxBaseResist = 60, -- Cap on base (non-special) resists
 		MaxSlicedResist = 75, -- Cap on base resists for effectiveness-sliced armor
 		MaxSpecialResist = 80, -- Cap on an armor family's own special resists (slicing does not apply)
 		MaxStunLayerResist = 40, -- Cap on stun resist granted by a stun layer (stun is vulnerable on all armor)
-	},
-
-	PlayerCreationManager = {
-		MaxCharactersPerGalaxy = 3, -- Characters allowed per account on this galaxy
-		CharacterCreationCooldown = 60, -- Minutes an account must wait between character creations (staff exempt); 0 = no limit
 	},
 
 	------Extra Config ------
