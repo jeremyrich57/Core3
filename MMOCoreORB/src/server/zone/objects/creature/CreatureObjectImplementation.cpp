@@ -2463,6 +2463,9 @@ void CreatureObjectImplementation::notifyLoadFromDatabase() {
 
 		skillManager->awardDraftSchematics(skill, ghost, false);
 
+		// Grant abilities added to a skill after the player learned it (e.g. new cert or command grants in skills.iff)
+		skillManager->addAbilities(ghost, *skill->getAbilities(), false);
+
 		totalSkillPointsWasted -= skill->getSkillPointsRequired();
 	}
 

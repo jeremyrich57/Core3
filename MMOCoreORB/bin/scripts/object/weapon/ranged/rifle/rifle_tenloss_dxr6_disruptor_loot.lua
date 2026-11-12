@@ -82,7 +82,8 @@ object_weapon_ranged_rifle_rifle_tenloss_dxr6_disruptor_loot = object_weapon_ran
 
 	-- See http://www.ocdsoft.com/files/certifications.xls
 	-- Unsure of certification to use
-	certificationsRequired = { "startleshot1" },
+	-- Granted by Rifleman Ability II (patched skills.iff, tools/patch/skill_costs.py)
+	certificationsRequired = { "cert_rifle_tenloss_dxr6" },
 	-- See http://www.ocdsoft.com/files/accuracy.xls
 	creatureAccuracyModifiers = { "rifle_accuracy" },
 

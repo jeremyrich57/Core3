@@ -82,6 +82,7 @@ object_weapon_ranged_rifle_rifle_beam = object_weapon_ranged_rifle_shared_rifle_
 	xpType = "combat_rangedspecialize_rifle",
 
 	-- See http://www.ocdsoft.com/files/certifications.xls
+	-- Granted by Master Rifleman (patched skills.iff, tools/patch/skill_costs.py)
 	certificationsRequired = { "cert_rifle_beam" },
 	-- See http://www.ocdsoft.com/files/accuracy.xls
 	creatureAccuracyModifiers = { "rifle_accuracy" },
