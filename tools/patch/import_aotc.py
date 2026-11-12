@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import vehicles from an SWG AotC client install into patches/.
+"""Import vehicles (and the crafting components they need) from an SWG AotC client install into patches/.
 
     python3 tools/patch/import_aotc.py /mnt/c/SWGAoTC ~/tre
     python3 tools/patch/build.py --install ~/tre
@@ -75,6 +75,17 @@ VEHICLES = {
             "item_d": ["speeder_stap_deed"],
             "craft_vehicle_ingredients_n": ["speeder_stap_schematic"],
             "craft_vehicle_ingredients_d": ["speeder_stap_schematic"],
+        },
+    },
+}
+
+# Other AotC objects to import: object templates (and what they reference) plus their strings.
+COMPONENTS = {
+    "veh_power_plant": {  # generic speeder power plant used by the BARC and STAP schematics
+        "templates": ["object/tangible/component/vehicle/shared_veh_power_plant.iff"],
+        "strings": {
+            "craft_item_ingredients_n": ["power_plant"],
+            "craft_item_ingredients_d": ["power_plant"],
         },
     },
 }
@@ -353,9 +364,9 @@ def graft_rider_poses(poses: list[str], aotc: Archives, stock: Archives) -> tupl
 
 # --- strings ---
 
-def merge_strings(vehicles: dict, aotc: Archives, stock: Archives) -> dict[str, bytes]:
+def merge_strings(entries: list[dict], aotc: Archives, stock: Archives) -> dict[str, bytes]:
     wanted: dict[str, list[str]] = {}
-    for vehicle in vehicles.values():
+    for vehicle in entries:
         for table, keys in vehicle["strings"].items():
             wanted.setdefault(table, []).extend(keys)
     files = {}
@@ -369,7 +380,7 @@ def merge_strings(vehicles: dict, aotc: Archives, stock: Archives) -> dict[str, 
             if text is None:
                 raise SystemExit(f"AotC's {path} has no {key}")
             if ours.get(key) is not None and ours.get(key) != text:
-                raise SystemExit(f"stock {path} already has {key}; drop it from VEHICLES")
+                raise SystemExit(f"stock {path} already has {key}; drop it from VEHICLES/COMPONENTS")
             ours.set(key, text)
             print(f"{path}: {key} = {text!r}")
         files[path] = stf.dump(ours)
@@ -391,9 +402,9 @@ def main() -> int:
     files.update(mount_files)
     lat, rider_animations = graft_rider_poses([v["rider_pose"] for v in VEHICLES.values()], aotc, stock)
     files[RIDER_LAT] = lat
-    files.update(merge_strings(VEHICLES, aotc, stock))
+    files.update(merge_strings([*VEHICLES.values(), *COMPONENTS.values()], aotc, stock))
 
-    roots = [t for v in VEHICLES.values() for t in v["templates"]]
+    roots = [t for v in [*VEHICLES.values(), *COMPONENTS.values()] for t in v["templates"]]
     assets, missing = asset_closure(roots + sorted(saddle_refs | rider_animations), aotc, stock)
     for name in roots:
         if name not in assets:

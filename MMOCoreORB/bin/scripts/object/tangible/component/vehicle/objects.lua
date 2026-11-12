@@ -3724,3 +3724,10 @@ object_tangible_component_vehicle_shared_weapon_link = SharedTangibleObjectTempl
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_component_vehicle_shared_weapon_link, "object/tangible/component/vehicle/shared_weapon_link.iff")
+
+object_tangible_component_vehicle_shared_veh_power_plant = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/component/vehicle/shared_veh_power_plant.iff"
+	-- Imported from the SWG AotC client (tools/patch/import_aotc.py); data is loaded from core3_custom.tre
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_component_vehicle_shared_veh_power_plant, "object/tangible/component/vehicle/shared_veh_power_plant.iff")

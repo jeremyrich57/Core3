@@ -61,9 +61,9 @@ object_draft_schematic_vehicle_civilian_speeder_stap = object_draft_schematic_ve
 	customizationDefaults = {},
 
 	ingredientTemplateNames = {"craft_vehicle_ingredients_n", "craft_vehicle_ingredients_n", "craft_item_ingredients_n"},
-	ingredientTitleNames = {"vehicle_body", "structural_frame", "power_plant_av21"},
+	ingredientTitleNames = {"vehicle_body", "structural_frame", "power_plant"},
 	ingredientSlotType = {0, 0, 1},
-	resourceTypes = {"metal_nonferrous", "metal_ferrous", "object/tangible/component/vehicle/shared_veh_power_plant_av21.iff"},
+	resourceTypes = {"metal_nonferrous", "metal_ferrous", "object/tangible/component/vehicle/shared_veh_power_plant.iff"},
 	resourceQuantities = {1125, 3125, 1},
 	contribution = {100, 100, 100},
 
