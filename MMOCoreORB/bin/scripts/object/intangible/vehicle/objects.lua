@@ -432,3 +432,17 @@ object_intangible_vehicle_shared_vehicle_pcd_base = SharedIntangibleObjectTempla
 }
 
 ObjectTemplates:addClientTemplate(object_intangible_vehicle_shared_vehicle_pcd_base, "object/intangible/vehicle/shared_vehicle_pcd_base.iff")
+
+object_intangible_vehicle_shared_barc_speeder_pcd = SharedIntangibleObjectTemplate:new {
+	clientTemplateFileName = "object/intangible/vehicle/shared_barc_speeder_pcd.iff"
+	-- Imported from the SWG AotC client (tools/patch/import_aotc.py); data is loaded from core3_custom.tre
+}
+
+ObjectTemplates:addClientTemplate(object_intangible_vehicle_shared_barc_speeder_pcd, "object/intangible/vehicle/shared_barc_speeder_pcd.iff")
+
+object_intangible_vehicle_shared_stap_speeder_pcd = SharedIntangibleObjectTemplate:new {
+	clientTemplateFileName = "object/intangible/vehicle/shared_stap_speeder_pcd.iff"
+	-- Imported from the SWG AotC client (tools/patch/import_aotc.py); data is loaded from core3_custom.tre
+}
+
+ObjectTemplates:addClientTemplate(object_intangible_vehicle_shared_stap_speeder_pcd, "object/intangible/vehicle/shared_stap_speeder_pcd.iff")

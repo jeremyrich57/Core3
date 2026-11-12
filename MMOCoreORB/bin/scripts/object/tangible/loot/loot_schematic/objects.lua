@@ -4937,3 +4937,17 @@ object_tangible_loot_loot_schematic_shared_utensils_schematic = SharedTangibleOb
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_utensils_schematic, "object/tangible/loot/loot_schematic/shared_utensils_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_barc_speeder_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_barc_speeder_schematic.iff"
+	-- Imported from the SWG AotC client (tools/patch/import_aotc.py); data is loaded from core3_custom.tre
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_barc_speeder_schematic, "object/tangible/loot/loot_schematic/shared_barc_speeder_schematic.iff")
+
+object_tangible_loot_loot_schematic_shared_speeder_stap_schematic = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/loot/loot_schematic/shared_speeder_stap_schematic.iff"
+	-- Imported from the SWG AotC client (tools/patch/import_aotc.py); data is loaded from core3_custom.tre
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_loot_loot_schematic_shared_speeder_stap_schematic, "object/tangible/loot/loot_schematic/shared_speeder_stap_schematic.iff")
