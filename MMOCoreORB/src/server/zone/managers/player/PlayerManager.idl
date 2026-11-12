@@ -101,6 +101,8 @@ class PlayerManager extends Observer implements Logger {
 
 	private int veteranRewardAdditionalMilestones;
 
+	private boolean veteranRewardsEnabled;
+
 	@dereferenced
 	private VeteranRewardList veteranRewards;
 
@@ -605,6 +607,10 @@ class PlayerManager extends Observer implements Logger {
 
 	public int getBaseStoredShips() {
 		return baseStoredShips;
+	}
+
+	public boolean isVeteranRewardsEnabled() {
+		return veteranRewardsEnabled;
 	}
 
 	public int getNumVeteranRewardMilestones(){

@@ -260,6 +260,7 @@ void PlayerManagerImplementation::loadLuaConfig() {
 	baseStoredVehicles = lua->getGlobalInt("baseStoredVehicles");
 	baseStoredShips = lua->getGlobalInt("baseStoredShips");
 
+	veteranRewardsEnabled = lua->getGlobalBoolean("veteranRewardsEnabled");
 	veteranRewardAdditionalMilestones = lua->getGlobalInt("veteranRewardAdditionalMilestones");
 
 	LuaObject rewardMilestonesLua = lua->getGlobalObject("veteranRewardMilestones");
@@ -5955,6 +5956,11 @@ void PlayerManagerImplementation::claimVeteranRewards(CreatureObject* player) {
 	if (player == nullptr || !player->isPlayerCreature() )
 		return;
 
+	if (!veteranRewardsEnabled) {
+		player->sendSystemMessage("Veteran rewards are currently disabled.");
+		return;
+	}
+
 	PlayerObject* ghost = player->getPlayerObject();
 
 	// Get account
@@ -6176,7 +6182,7 @@ void PlayerManagerImplementation::generateVeteranReward(CreatureObject* player) 
 }
 
 int PlayerManagerImplementation::getEligibleMilestone(PlayerObject *ghost, Account* account) {
-	if (account == nullptr || ghost == nullptr )
+	if (!veteranRewardsEnabled || account == nullptr || ghost == nullptr )
 		return -1;
 
 	int accountAge = account->getAgeInDays();
