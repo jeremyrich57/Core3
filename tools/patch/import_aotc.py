@@ -14,6 +14,8 @@ the shared object templates and mount tables) and players' clients (models, text
 - appearance/lat/all_m.lat: the stock humanoid animation table plus AotC's rider poses for these vehicles, so the
   rider sits on the vehicle with the right pose instead of a T-pose.
 - string/en/*.stf: the stock tables plus the vehicles' names and descriptions.
+- misc/object_template_crc_string_table.iff: the stock table plus the imported object templates. The client resolves
+  the template CRC the server sends through this table; without an entry it silently never shows the object.
 
 AotC's own copies of the shared tables (all_m.lat, the mount datatables, string tables) carry many other changes, so
 only the rows for these vehicles are grafted onto the stock files. Re-run after adding a vehicle to VEHICLES.
@@ -91,6 +93,7 @@ COMPONENTS = {
 }
 
 RIDER_LAT = "appearance/lat/all_m.lat"
+CRC_TABLE = "misc/object_template_crc_string_table.iff"
 MOUNT_TABLES = "datatables/mount/"
 
 # Paths inside IFF data. The bytes before a path are often IFF lengths that happen to be printable, so candidates are
@@ -362,6 +365,43 @@ def graft_rider_poses(poses: list[str], aotc: Archives, stock: Archives) -> tupl
     return iff_dump(lat), animations
 
 
+# --- object template CRC table ---
+
+def add_template_crcs(templates: list[str], stock: Archives) -> bytes:
+    """FORM CSTB > FORM 0000: DATA (count), CRCT (CRCs, sorted), STRT (offsets into STNG), STNG (NUL-terminated names)."""
+    data = stock.get(CRC_TABLE)
+    form = iff_parse(data)[0][2][0]
+    chunks = {node[0]: node[2] for node in form[2]}
+    (count,) = struct.unpack("<I", chunks["DATA"])
+    crcs = struct.unpack(f"<{count}I", chunks["CRCT"])
+    offsets = struct.unpack(f"<{count}I", chunks["STRT"])
+    strings = chunks["STNG"]
+    entries = {crc: strings[off:strings.index(b"\0", off)].decode("ascii") for crc, off in zip(crcs, offsets)}
+    added = 0
+    for name in templates:
+        crc = tre.crc(name)
+        if crc in entries:
+            if entries[crc] != name:
+                raise SystemExit(f"{CRC_TABLE}: {name} collides with {entries[crc]}")
+            continue
+        entries[crc] = name
+        added += 1
+    ordered = sorted(entries.items())
+    names = b""
+    offsets = []
+    for _, name in ordered:
+        offsets.append(len(names))
+        names += name.encode("ascii") + b"\0"
+    form[2] = [
+        ["DATA", None, struct.pack("<I", len(ordered))],
+        ["CRCT", None, struct.pack(f"<{len(ordered)}I", *(crc for crc, _ in ordered))],
+        ["STRT", None, struct.pack(f"<{len(ordered)}I", *offsets)],
+        ["STNG", None, names],
+    ]
+    print(f"{CRC_TABLE}: +{added} object template(s)")
+    return iff_dump([["FORM", "CSTB", [form]]])
+
+
 # --- strings ---
 
 def merge_strings(entries: list[dict], aotc: Archives, stock: Archives) -> dict[str, bytes]:
@@ -410,6 +450,7 @@ def main() -> int:
         if name not in assets:
             raise SystemExit(f"AotC has no {name}")
     files.update(assets)
+    files[CRC_TABLE] = add_template_crcs(roots, stock)
 
     for name, data in sorted(files.items()):
         dest = os.path.join(args.out, *name.split("/"))

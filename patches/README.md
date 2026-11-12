@@ -31,7 +31,8 @@ python3 tools/patch/build.py --install ~/tre   # pack into build/patches/core3_c
   (`appearance/`, `texture/`, `shader/`, `sample/`, `sound/`, `clientdata/vehicle/`, `object/`), plus the stock
   `datatables/mount/*.iff`, `appearance/lat/all_m.lat` (rider poses) and `string/en/` tables (`monster_name`,
   `monster_detail`, `pet_deed`, `item_n`, `item_d`, `craft_vehicle_ingredients_n/_d`, `craft_item_ingredients_n/_d`)
-  with only these vehicles' rows added. Also the generic speeder power plant their schematics use (`COMPONENTS`). Server templates are in `MMOCoreORB/bin/scripts/object/` as usual.
+  with only these vehicles' rows added. `misc/object_template_crc_string_table.iff` gets
+  the imported object templates added; the client can't show an object whose template CRC isn't in it. Also the generic speeder power plant their schematics use (`COMPONENTS`). Server templates are in `MMOCoreORB/bin/scripts/object/` as usual.
 
 ## Optional patches (`patches-opt/`)
 
