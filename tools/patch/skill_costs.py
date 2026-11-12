@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate patches/datatables/skill/skills.iff with custom skill point costs and extra command grants.
+"""Generate patches/datatables/skill/skills.iff with custom skill point costs, extra command grants and skill mods.
 
 Also writes patches/string/en/cmd_n.stf and cmd_d.stf when COMMAND_STRINGS adds names/descriptions for new
 commands or certifications (the client labels each grant on a skill box from these).
@@ -63,6 +63,73 @@ COMMAND_GRANTS = {
     "combat_2hsword_speed_02": ["cert_sword_2h_executioners_hack"],  # was the combat_2hsword_speed_02 box itself
 }
 
+# Skill (box) name -> {skill mod: value} added to its SKILL_MODS (summed with any stock value for the same mod).
+# The server applies these when the box is learned; the client lists them on the box.
+_SMUGGLER_DIRTY_FIGHTING = {"pistol_speed": 5, "pistol_accuracy": 5, "melee_defense": 5}
+_SMUGGLER_SLICING = {"ranged_defense": 5}
+_RANGER_FRONTIERING = {"melee_defense": 5, "ranged_defense": 5}
+SKILL_MOD_GRANTS = {
+    "combat_smuggler_novice": {"melee_defense": 10, "ranged_defense": 15, "pistol_speed": 10, "pistol_accuracy": 10},
+    "combat_smuggler_combat_01": _SMUGGLER_DIRTY_FIGHTING,  # Dirty Fighting I-IV
+    "combat_smuggler_combat_02": _SMUGGLER_DIRTY_FIGHTING,
+    "combat_smuggler_combat_03": _SMUGGLER_DIRTY_FIGHTING,
+    "combat_smuggler_combat_04": _SMUGGLER_DIRTY_FIGHTING,
+    "combat_smuggler_underworld_01": {"knockdown_defense": 10},
+    "combat_smuggler_underworld_02": {"stun_defense": 10},
+    "combat_smuggler_underworld_03": {"blind_defense": 10},
+    "combat_smuggler_underworld_04": {"posture_change_down_defense": 10},  # forced kneel / posture down
+    "combat_smuggler_slicing_01": _SMUGGLER_SLICING,  # Slicing I-IV
+    "combat_smuggler_slicing_02": _SMUGGLER_SLICING,
+    "combat_smuggler_slicing_03": _SMUGGLER_SLICING,
+    "combat_smuggler_slicing_04": _SMUGGLER_SLICING,
+    "combat_smuggler_master": {"pistol_speed": 10, "pistol_accuracy": 10, "melee_defense": 10, "ranged_defense": 10},
+    "outdoors_ranger_novice": {"melee_defense": 10, "ranged_defense": 10},
+    "outdoors_ranger_tracking_01": _RANGER_FRONTIERING,  # Frontiering I-IV
+    "outdoors_ranger_tracking_02": _RANGER_FRONTIERING,
+    "outdoors_ranger_tracking_03": _RANGER_FRONTIERING,
+    "outdoors_ranger_tracking_04": _RANGER_FRONTIERING,
+    "outdoors_ranger_movement_01": {"knockdown_defense": 10},  # Wayfaring I-IV
+    "outdoors_ranger_movement_02": {"stun_defense": 10},
+    "outdoors_ranger_movement_03": {"blind_defense": 10},
+    "outdoors_ranger_movement_04": {"posture_change_down_defense": 10},
+    "outdoors_ranger_master": {"knockdown_defense": 25, "blind_defense": 25},
+    # Squad Leader: personal defenses (the stock group_* mods on these boxes are untouched)
+    "outdoors_squadleader_novice": {"melee_defense": 10, "ranged_defense": 10},
+    "outdoors_squadleader_defense_01": {"melee_defense": 5},  # Leadership I-IV
+    "outdoors_squadleader_defense_02": {"melee_defense": 5},
+    "outdoors_squadleader_defense_03": {"melee_defense": 5},
+    "outdoors_squadleader_defense_04": {"melee_defense": 5},
+    "outdoors_squadleader_support_01": {"ranged_defense": 5},  # Tactics I-IV
+    "outdoors_squadleader_support_02": {"ranged_defense": 5},
+    "outdoors_squadleader_support_03": {"ranged_defense": 5},
+    "outdoors_squadleader_support_04": {"ranged_defense": 5},
+    "outdoors_squadleader_movement_01": {"knockdown_defense": 10},  # Mobility I-IV
+    "outdoors_squadleader_movement_02": {"stun_defense": 10},
+    "outdoors_squadleader_movement_03": {"blind_defense": 10},
+    "outdoors_squadleader_movement_04": {"posture_change_down_defense": 10},
+    "outdoors_squadleader_offense_01": {"pistol_speed": 10},  # Strategy I-III
+    "outdoors_squadleader_offense_02": {"carbine_speed": 10},
+    "outdoors_squadleader_offense_03": {"rifle_speed": 10},
+    "outdoors_squadleader_master": {
+        "melee_defense": 10, "ranged_defense": 10, "stun_defense": 25, "posture_change_down_defense": 25},
+    # Combat Medic (the medicine crafting tree is left alone)
+    "science_combatmedic_novice": {"melee_defense": 10, "ranged_defense": 10},
+    "science_combatmedic_healing_range_01": {"ranged_defense": 5},  # Ranged Healing Distance I-IV
+    "science_combatmedic_healing_range_02": {"ranged_defense": 5},
+    "science_combatmedic_healing_range_03": {"ranged_defense": 5},
+    "science_combatmedic_healing_range_04": {"ranged_defense": 5},
+    "science_combatmedic_healing_range_speed_01": {"melee_defense": 5},  # Ranged Healing Speed I-IV
+    "science_combatmedic_healing_range_speed_02": {"melee_defense": 5},
+    "science_combatmedic_healing_range_speed_03": {"melee_defense": 5},
+    "science_combatmedic_healing_range_speed_04": {"melee_defense": 5},
+    "science_combatmedic_support_01": {"knockdown_defense": 10},  # Combat Medic Support I-IV
+    "science_combatmedic_support_02": {"stun_defense": 10},
+    "science_combatmedic_support_03": {"blind_defense": 10},
+    "science_combatmedic_support_04": {"posture_change_down_defense": 10},
+    "science_combatmedic_master": {
+        "melee_defense": 10, "ranged_defense": 10, "stun_defense": 25, "knockdown_defense": 25},
+}
+
 # New command/cert name -> (cmd_n name, cmd_d description) shown on the skill box. Stock keys are left untouched.
 COMMAND_STRINGS = {
     "cert_pistol_de_10": ("DE-10 Pistol Certification", "This certification allows you to wield a DE-10 Pistol."),
@@ -81,7 +148,7 @@ def main() -> int:
     ap.add_argument("--out", default=OUTPUT, help="output file (default: patches/datatables/skill/skills.iff)")
     args = ap.parse_args()
 
-    if not COST_OVERRIDES and not COMMAND_GRANTS:
+    if not COST_OVERRIDES and not COMMAND_GRANTS and not SKILL_MOD_GRANTS:
         if os.path.exists(args.out):
             os.remove(args.out)
             print(f"No overrides; removed {args.out} so the stock file is used.")
@@ -120,6 +187,21 @@ def main() -> int:
         added = [c for c in commands if c.lower() not in {e.lower() for e in existing}]
         row[commands_col] = ",".join(existing + added)
         print(f"  {skill:<24} +{','.join(added) or '(already granted)'}")
+
+    mods_col = skills.column("SKILL_MODS")
+    for skill, grants in SKILL_MOD_GRANTS.items():
+        rows = [row for row in skills.rows if row[name_col] == skill]
+        if len(rows) != 1:
+            raise SystemExit(f"Expected one skill named {skill!r}, found {len(rows)}")
+        row = rows[0]
+        mods = {}
+        for entry in (e for e in row[mods_col].split(",") if e):
+            key, value = entry.split("=")
+            mods[key] = int(value)
+        for key, value in grants.items():
+            mods[key] = mods.get(key, 0) + value
+        row[mods_col] = ",".join(f"{k}={v}" for k, v in mods.items())
+        print(f"  {skill:<24} mods {row[mods_col]}")
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "wb") as f:
