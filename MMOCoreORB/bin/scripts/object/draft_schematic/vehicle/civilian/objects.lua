@@ -579,3 +579,17 @@ object_draft_schematic_vehicle_civilian_shared_speeder_bike_swoop = SharedDraftS
 }
 
 ObjectTemplates:addClientTemplate(object_draft_schematic_vehicle_civilian_shared_speeder_bike_swoop, "object/draft_schematic/vehicle/civilian/shared_speeder_bike_swoop.iff")
+
+object_draft_schematic_vehicle_civilian_shared_barc_speeder = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/vehicle/civilian/shared_barc_speeder.iff"
+	-- Imported from the SWG AotC client (tools/patch/import_aotc.py); data is loaded from core3_custom.tre
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_vehicle_civilian_shared_barc_speeder, "object/draft_schematic/vehicle/civilian/shared_barc_speeder.iff")
+
+object_draft_schematic_vehicle_civilian_shared_speeder_stap = SharedDraftSchematicObjectTemplate:new {
+	clientTemplateFileName = "object/draft_schematic/vehicle/civilian/shared_speeder_stap.iff"
+	-- Imported from the SWG AotC client (tools/patch/import_aotc.py); data is loaded from core3_custom.tre
+}
+
+ObjectTemplates:addClientTemplate(object_draft_schematic_vehicle_civilian_shared_speeder_stap, "object/draft_schematic/vehicle/civilian/shared_speeder_stap.iff")

@@ -630,3 +630,17 @@ object_tangible_deed_vehicle_deed_shared_vehicular_prototype_deed = SharedTangib
 }
 
 ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_vehicular_prototype_deed, "object/tangible/deed/vehicle_deed/shared_vehicular_prototype_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_barc_speeder_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_barc_speeder_deed.iff"
+	-- Imported from the SWG AotC client (tools/patch/import_aotc.py); data is loaded from core3_custom.tre
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_barc_speeder_deed, "object/tangible/deed/vehicle_deed/shared_barc_speeder_deed.iff")
+
+object_tangible_deed_vehicle_deed_shared_speeder_stap_deed = SharedTangibleObjectTemplate:new {
+	clientTemplateFileName = "object/tangible/deed/vehicle_deed/shared_speeder_stap_deed.iff"
+	-- Imported from the SWG AotC client (tools/patch/import_aotc.py); data is loaded from core3_custom.tre
+}
+
+ObjectTemplates:addClientTemplate(object_tangible_deed_vehicle_deed_shared_speeder_stap_deed, "object/tangible/deed/vehicle_deed/shared_speeder_stap_deed.iff")
