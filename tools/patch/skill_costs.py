@@ -58,7 +58,7 @@ COMMAND_GRANTS = {
     "combat_pistol_ability_02": ["cert_pistol_geonosian_sonic_blaster"],  # was doubleTap
     "combat_rifleman_ability_02": ["cert_rifle_tenloss_dxr6"],  # was startleShot1
     "combat_rifleman_support_03": ["cert_rifle_berserker"],  # was flurryShot2
-    "combat_rifleman_master": ["cert_rifle_beam"],  # stock cert, granted by no skill
+    "combat_rifleman_accuracy_01": ["cert_rifle_beam"],  # Sniping I; stock cert, granted by no skill
     "combat_2hsword_speed_02": ["cert_sword_2h_executioners_hack"],  # was the combat_2hsword_speed_02 box itself
 }
 
