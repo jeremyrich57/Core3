@@ -8,8 +8,8 @@
 #include "ArmorTestKit.h"
 
 /**
- * Staff test kits for the AotC vehicles. Each gives the vehicle's loot schematic (5 uses), a stack of
- * Specialized Speeder Power Plants for those 5 crafts, and one max-quality crafted deed.
+ * Staff test kits for the AotC vehicles. Each gives the vehicle's loot schematic (5 uses), max-quality metals and a
+ * stack of Specialized Speeder Power Plants for those 5 crafts, and one max-quality crafted deed.
  *   /object barckit  - BARC Speeder
  *   /object stapkit  - STAP Speeder
  * With a player targeted, the kit goes to that player's inventory instead of yours.
@@ -23,14 +23,23 @@ class VehicleTestKit {
 		};
 		const int itemCount = sizeof(items) / sizeof(items[0]);
 
+		// Both schematics take 1125 non-ferrous and 3125 ferrous metal per craft
+		static const ArmorTestKit::KitResource resources[] = {
+			{"metal_nonferrous", 1125 * 5},
+			{"metal_ferrous", 3125 * 5},
+		};
+		const int resourceCount = sizeof(resources) / sizeof(resources[0]);
+
 		ManagedReference<SceneObject*> inventory = recipient->getSlottedObject("inventory");
+		ManagedReference<ResourceManager*> resourceManager = zoneServer->getResourceManager();
 
-		if (inventory == nullptr)
+		if (inventory == nullptr || resourceManager == nullptr)
 			return;
 
-		if (!ArmorTestKit::checkRoom(staff, inventory, itemCount + 1, kitName))
+		if (!ArmorTestKit::checkRoom(staff, inventory, itemCount + resourceCount + 1, kitName))
 			return;
 
+		const int resourcesGiven = ArmorTestKit::giveResources(resourceManager, recipient, inventory, resources, resourceCount, kitName);
 		const int itemsGiven = ArmorTestKit::giveItems(zoneServer, recipient, inventory, items, itemCount, kitName);
 
 		bool deedGiven = false;
@@ -47,7 +56,8 @@ class VehicleTestKit {
 			}
 		}
 
-		const String summary = kitName + ": " + String::valueOf(itemsGiven) + "/" + String::valueOf(itemCount)
+		const String summary = kitName + ": " + String::valueOf(resourcesGiven) + "/" + String::valueOf(resourceCount)
+				+ " max-quality metals, " + String::valueOf(itemsGiven) + "/" + String::valueOf(itemCount)
 				+ " items (loot schematic, 5 power plants) and " + (deedGiven ? "a" : "no") + " max-quality deed added";
 
 		recipient->sendSystemMessage(summary + ".");
