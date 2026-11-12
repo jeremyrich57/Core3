@@ -81,7 +81,8 @@ object_weapon_ranged_pistol_pistol_geonosian_sonic_blaster_loot = object_weapon_
 	xpType = "combat_rangedspecialize_pistol",
 
 	-- See http://www.ocdsoft.com/files/certifications.xls
-	certificationsRequired = { "doubleTap" },
+	-- Granted by Pistoleer Ability II (patched skills.iff, tools/patch/skill_costs.py)
+	certificationsRequired = { "cert_pistol_geonosian_sonic_blaster" },
 	-- See http://www.ocdsoft.com/files/accuracy.xls
 	creatureAccuracyModifiers = { "pistol_accuracy" },
 

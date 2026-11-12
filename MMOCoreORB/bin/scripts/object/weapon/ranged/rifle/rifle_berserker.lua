@@ -81,7 +81,8 @@ object_weapon_ranged_rifle_rifle_berserker = object_weapon_ranged_rifle_shared_r
 	xpType = "combat_rangedspecialize_rifle",
 
 	-- See http://www.ocdsoft.com/files/certifications.xls
-	certificationsRequired = { "flurryshot2" },
+	-- Granted by Rifleman Support III (patched skills.iff, tools/patch/skill_costs.py)
+	certificationsRequired = { "cert_rifle_berserker" },
 	-- See http://www.ocdsoft.com/files/accuracy.xls
 	creatureAccuracyModifiers = { "rifle_accuracy" },
 
