@@ -74,7 +74,7 @@ object_weapon_ranged_rifle_rifle_beam = object_weapon_ranged_rifle_shared_rifle_
 	damageType = ENERGY,
 
 	-- NONE, LIGHT, MEDIUM, HEAVY
-	armorPiercing = NONE,
+	armorPiercing = MEDIUM,
 
 	-- combat_rangedspecialize_bactarifle, combat_rangedspecialize_rifle, combat_rangedspecialize_pistol, combat_rangedspecialize_heavy, combat_rangedspecialize_carbine
 	-- combat_meleespecialize_unarmed, combat_meleespecialize_twohand, combat_meleespecialize_polearm, combat_meleespecialize_onehand, combat_general,
@@ -82,7 +82,7 @@ object_weapon_ranged_rifle_rifle_beam = object_weapon_ranged_rifle_shared_rifle_
 	xpType = "combat_rangedspecialize_rifle",
 
 	-- See http://www.ocdsoft.com/files/certifications.xls
-	-- Granted by Master Rifleman (patched skills.iff, tools/patch/skill_costs.py)
+	-- Granted by Master Rifleman (patched skills.iff, tools/patch/skill_costs.py). Damage and speed match the T-21.
 	certificationsRequired = { "cert_rifle_beam" },
 	-- See http://www.ocdsoft.com/files/accuracy.xls
 	creatureAccuracyModifiers = { "rifle_accuracy" },
@@ -117,10 +117,10 @@ object_weapon_ranged_rifle_rifle_beam = object_weapon_ranged_rifle_shared_rifle_
 	maxRange = 64,
 	maxRangeAccuracy = -25,
 
-	minDamage = 75,
-	maxDamage = 135,
+	minDamage = 135,
+	maxDamage = 400,
 
-	attackSpeed = 4.8,
+	attackSpeed = 7,
 
 	woundsRatio = 8,
 
@@ -129,8 +129,8 @@ object_weapon_ranged_rifle_rifle_beam = object_weapon_ranged_rifle_shared_rifle_
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "exp_durability", "expRange", "expEffeciency", "expEffeciency", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "hitpoints", "midrangemod", "attackhealthcost", "attackactioncost", "attackmindcost"},
-	experimentalMin = {0, 0, 53, 95, 6.2, 19, 750, -10, 26, 58, 55},
-	experimentalMax = {0, 0, 98, 176, 4.3, 35, 1500, 10, 14, 32, 24},
+	experimentalMin = {0, 0, 80, 200, 10.5, 19, 750, -10, 26, 58, 55},
+	experimentalMax = {0, 0, 115, 375, 6.5, 35, 1500, 10, 14, 32, 24},
 	experimentalPrecision = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 }
