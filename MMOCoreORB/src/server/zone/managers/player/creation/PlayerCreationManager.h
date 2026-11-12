@@ -72,12 +72,36 @@ class PlayerCreationManager : public Singleton<PlayerCreationManager>, public Lo
 	int startingBank;
 	int skillPoints;
 
+	// Starting attribute rescaling (configured in player_creation_manager.lua).
+	int attributeRangeMin;
+	int attributeRangeMax;
+	int attributeRounding;
+
+	// Lowest/highest starting attribute across all species/profession combinations,
+	// computed from the client datatables.
+	int sourceAttributeMin;
+	int sourceAttributeMax;
+
+	// False when rescaling is on but attribute_limits.iff doesn't match it (see validateAttributeLimits).
+	bool statMigrationEnabled;
+
 	bool freeGodMode;
 
 	mutable HashTable<uint32, Time> lastCreatedCharacter;
 	mutable Mutex charCountMutex;
 
 	void loadLuaConfig();
+	void loadAttributeSourceRange();
+	bool validateAttributeLimits() const;
+
+	int rescaleAttributeTotal(int total) const;
+
+	/**
+	 * Rescales 9 starting attributes, rounded to attributeRounding, so that they add up exactly to
+	 * rescaleAttributeTotal() of the original sum while staying within the species' limits if possible.
+	 */
+	void rescaleAttributes(const int* values, int* result, const RacialCreationData* limits) const;
+
 	void loadRacialCreationData();
 	void loadDefaultCharacterItems();
 	void loadProfessionDefaultsInfo();
@@ -100,6 +124,17 @@ class PlayerCreationManager : public Singleton<PlayerCreationManager>, public Lo
 public:
 	PlayerCreationManager();
 	~PlayerCreationManager();
+
+	bool isAttributeRescaleEnabled() const;
+
+	/**
+	 * Migration limits come straight from datatables/creation/attribute_limits.iff, which the client
+	 * also uses for its sliders. While starting attributes are rescaled, that file must be the
+	 * rescaled one from patches/ (tools/patch/attribute_limits.py); otherwise migration is disabled.
+	 */
+	bool isStatMigrationEnabled() const {
+		return statMigrationEnabled;
+	}
 
 	/**
 	 * Validates the character's name.

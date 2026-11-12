@@ -566,7 +566,9 @@ bool FactoryObjectImplementation::startFactory() {
 	timer = 30;
 	info(true) << "Factory Testing Timer Set To: " << timer;
 #else
-	timer = ((int)schematic->getComplexity()) * 8;
+	// QoL: 2-30 seconds per item, scaled by schematic complexity (1-60+),
+	// instead of the original complexity * 8 seconds.
+	timer = Math::clamp(2, (int)ceil(schematic->getComplexity() / 2.f), 30);
 #endif
 
 	if (!populateSchematicBlueprint(schematic))

@@ -76,6 +76,7 @@
 #include "server/zone/packets/object/StartingLocationListMessage.h"
 
 #include "server/zone/objects/region/CityRegion.h"
+#include "server/zone/managers/city/CityManager.h"
 #include "server/zone/managers/director/DirectorManager.h"
 #include "server/zone/objects/player/sui/callbacks/CloningRequestSuiCallback.h"
 #include "server/zone/objects/tangible/tool/CraftingStation.h"
@@ -1815,14 +1816,34 @@ void PlayerManagerImplementation::sendPlayerToCloner(CreatureObject* player, uin
 	else
 		player->switchZone(zone->getZoneName(), coordinate->getPositionX(), coordinate->getPositionZ(), coordinate->getPositionY(), cell->getObjectID());
 
+	// Clone Lab city specialization: cloning at a facility inside that city reduces clone wounds and item decay
+	// by the spec's private_spec_cloning value (percent). Read from the cloner's city, since the player is mid-transfer.
+	float cloneLabReduction = 0.f;
+	ManagedReference<CityRegion*> clonerCity = cloner->getCityRegion().get();
+
+	if (clonerCity != nullptr && !clonerCity->isClientRegion() && !clonerCity->isBanned(player->getObjectID())) {
+		CityManager* cityManager = server->getCityManager();
+		const CitySpecialization* spec = cityManager != nullptr ? cityManager->getCitySpecialization(clonerCity->getCitySpecialization()) : nullptr;
+
+		if (spec != nullptr && spec->getSkillMods()->contains("private_spec_cloning"))
+			cloneLabReduction = Math::clamp(0.f, spec->getSkillMods()->get("private_spec_cloning") / 100.f, 1.f);
+	}
+
+	if (cloneLabReduction > 0.f)
+		player->sendSystemMessage("The city's Clone Lab reduces your cloning wounds and equipment decay by " + String::valueOf((int)round(cloneLabReduction * 100.f)) + "%.");
+
 	uint64 preDesignatedFacilityOid = ghost->getCloningFacility();
 	ManagedReference<SceneObject*> preDesignatedFacility = server->getObject(preDesignatedFacilityOid);
 
 	if (preDesignatedFacility == nullptr || preDesignatedFacility != cloner) {
-		player->addWounds(CreatureAttribute::HEALTH, 100, true, false);
-		player->addWounds(CreatureAttribute::ACTION, 100, true, false);
-		player->addWounds(CreatureAttribute::MIND, 100, true, false);
-		player->addShockWounds(100, true);
+		int cloneWounds = (int)round(100.f * (1.f - cloneLabReduction));
+
+		if (cloneWounds > 0) {
+			player->addWounds(CreatureAttribute::HEALTH, cloneWounds, true, false);
+			player->addWounds(CreatureAttribute::ACTION, cloneWounds, true, false);
+			player->addWounds(CreatureAttribute::MIND, cloneWounds, true, false);
+			player->addShockWounds(cloneWounds, true);
+		}
 	}
 
 	if (ConfigManager::instance()->useCovertOvertSystem()) {
@@ -1853,13 +1874,13 @@ void PlayerManagerImplementation::sendPlayerToCloner(CreatureObject* player, uin
 
 				if (obj->getOptionsBitmask() & OptionBitmask::INSURED) {
 					//1% Decay for insured items
-					obj->inflictDamage(obj, 0, 0.01 * obj->getMaxCondition(), true, true);
+					obj->inflictDamage(obj, 0, 0.01 * (1.f - cloneLabReduction) * obj->getMaxCondition(), true, true);
 					//Set uninsured
 					uint32 bitmask = obj->getOptionsBitmask() - OptionBitmask::INSURED;
 					obj->setOptionsBitmask(bitmask);
 				} else {
 					//5% Decay for uninsured items
-					obj->inflictDamage(obj, 0, 0.05 * obj->getMaxCondition(), true, true);
+					obj->inflictDamage(obj, 0, 0.05 * (1.f - cloneLabReduction) * obj->getMaxCondition(), true, true);
 				}
 
 				// Calculate condition percentage for decay report
@@ -2612,10 +2633,11 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 		speciesModifier = getSpeciesXpModifier(player->getSpeciesName(), xpType);
 	}
 
-	float buffMultiplier = 1.f;
+	// Food XP buff (Ormachek): flat bonus added to the global multiplier, e.g. 4x + 0.25 = 4.25x. Gains only.
+	float buffBonus = 0.f;
 
-	if (player->hasBuff(BuffCRC::FOOD_XP_INCREASE) && !player->containsActiveSession(SessionFacadeType::CRAFTING))
-		buffMultiplier += player->getSkillModFromBuffs("xp_increase") / 100.f;
+	if (amount > 0 && player->hasBuff(BuffCRC::FOOD_XP_INCREASE) && !player->containsActiveSession(SessionFacadeType::CRAFTING))
+		buffBonus = player->getSkillModFromBuffs("xp_increase") / 100.f;
 
 	int xp = 0;
 
@@ -2623,11 +2645,14 @@ int PlayerManagerImplementation::awardExperience(CreatureObject* player, const S
 
 	if (applyModifiers) {
 		trx.addState("speciesModifier", speciesModifier);
-		trx.addState("buffMultiplier", buffMultiplier);
+		trx.addState("buffBonus", buffBonus);
 		trx.addState("localMultiplier", localMultiplier);
-		trx.addState("globalExpMultiplier", globalExpMultiplier);
+		// Jedi experience (gains and losses) is excluded from the global multiplier
+		float globalMultiplier = xpType == "jedi_general" ? 1.f : globalExpMultiplier;
 
-		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * buffMultiplier * localMultiplier * globalExpMultiplier));
+		trx.addState("globalExpMultiplier", globalMultiplier);
+
+		xp = playerObject->addExperience(trx, xpType, (int) (amount * speciesModifier * localMultiplier * (globalMultiplier + buffBonus)));
 	} else {
 		xp = playerObject->addExperience(trx, xpType, (int)amount);
 	}

@@ -37,6 +37,11 @@ public:
 			return GENERALERROR;
 		}
 
+		if (!PlayerCreationManager::instance()->isStatMigrationEnabled()) {
+			creature->sendSystemMessage("Stat migration is not available on this server.");
+			return SUCCESS;
+		}
+
 		auto ghost = creature->getPlayerObject();
 
 		if (ghost == nullptr) {
@@ -83,18 +88,44 @@ public:
 			return GENERALERROR;
 		}
 
-		// Player is in the tutorial zone and is allowed to migrate stats.
-		auto zone = creature->getZone();
+		// Migration applies right away, anywhere, without an Image Designer, as long as the
+		// player has full health, action and mind and no wounds or battle fatigue. Staff skip
+		// the check.
+		if (!privilegedPlayer && !isFullyHealed(creature)) {
+			creature->sendSystemMessage("You can't migrate your stats until you're fully healed.");
 
-		if ((zone != nullptr && zone->getZoneName() == "tutorial") || privilegedPlayer) {
-			session->migrateStats();
+			// Drop the pending targets so an Image Designer can't apply them past this check
+			session->cancelSession();
+			return SUCCESS;
+		}
 
-			if (privilegedPlayer) {
-				creature->sendSystemMessage("Stat Migration Permitted due to Staff Privileges.");
-			}
+		session->migrateStats();
+
+		if (privilegedPlayer) {
+			creature->sendSystemMessage("Stat Migration Permitted due to Staff Privileges.");
+		} else {
+			creature->sendSystemMessage("Your stats have been migrated.");
 		}
 
 		return SUCCESS;
+	}
+
+	static bool isFullyHealed(CreatureObject* creature) {
+		if (creature->getShockWounds() > 0)
+			return false;
+
+		for (int i = 0; i < 9; ++i) {
+			if (creature->getWounds(i) > 0)
+				return false;
+		}
+
+		// Health, action and mind pools
+		for (int i = 0; i < 9; i += 3) {
+			if (creature->getHAM(i) < creature->getMaxHAM(i))
+				return false;
+		}
+
+		return true;
 	}
 };
 

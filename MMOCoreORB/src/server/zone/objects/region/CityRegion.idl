@@ -100,6 +100,10 @@ class CityRegion extends ManagedObject implements Logger {
 	@dereferenced
 	protected Time nextCitizenAssessment;
 
+	// Maintenance and income tax run on their own clock (CityMaintenanceInterval), separate from rank updates.
+	@dereferenced
+	protected Time nextMaintenanceTime;
+
 	protected transient CityUpdateEvent cityUpdateEvent;
 
 	protected transient CitizenAssessmentEvent citizenAssessmentEvent;
@@ -296,6 +300,14 @@ class CityRegion extends ManagedObject implements Logger {
 
 	@dirty
 	public native int getTimeToUpdate();
+
+	public native int getTimeToMaintenance();
+
+	@read
+	public native boolean isMaintenanceDue();
+
+	@preLocked
+	public native void scheduleNextMaintenance(unsigned int seconds);
 
 	@dirty
 	public int getCitizenCount() {

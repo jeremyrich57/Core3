@@ -29,7 +29,7 @@ int PlaceCityHallComponent::placeStructure(StructureDeed* deed, CreatureObject* 
 	//Check the capped cities on this planet.
 	CityManager* cityManager = zone->getZoneServer()->getCityManager();
 
-	if (cityManager->isCityRankCapped(zone->getZoneName(), CityManager::OUTPOST)) {
+	if (cityManager->isCityRankCapped(zone->getZoneName(), CityManagerImplementation::newCityRank)) {
 		creature->sendSystemMessage("@player_structure:max_cities"); // This planet has already reached its max allowed number of player cities.
 		return 1;
 	}

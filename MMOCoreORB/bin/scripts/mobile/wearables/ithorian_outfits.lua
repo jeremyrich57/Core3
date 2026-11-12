@@ -2394,3 +2394,11 @@ addOutfit(
 }))
 
 
+
+-- VossMerchant (system vendor, Theed)
+addOutfit(
+	Outfit(
+	"VossMerchant",			-- OutfitName
+	{"object/tangible/wearables/ithorian/ith_robe_s03.iff",	-- Robe (Ithorian Merchant's Robe)
+	"object/tangible/wearables/ithorian/ith_necklace_s02.iff"	-- Necklace
+}))

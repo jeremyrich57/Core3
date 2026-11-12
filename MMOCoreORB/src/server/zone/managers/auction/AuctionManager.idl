@@ -43,6 +43,11 @@ class AuctionManager extends ManagedService implements Logger {
 
 	public final static int VENDOREXPIREPERIOD = 2592000; // Seconds
 	public final static int COMMODITYEXPIREPERIOD = 604800;
+	public final static int BAZAAREXPIREPERIOD = 2592000; // Fixed-price bazaar listings
+
+	// Bid auction duration chosen by the seller (seconds), clamped to this range
+	public final static int MINAUCTIONDURATION = 60;
+	public final static int MAXAUCTIONDURATION = 2592000;
 
 	// Location Types
 	public final static int LT_GALAXY = 0;

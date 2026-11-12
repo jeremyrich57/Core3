@@ -67,6 +67,20 @@ void LootValues::recalculateValues(bool initial) {
 	setDamageValues();
 }
 
+void LootValues::setBaseValues() {
+	dynamicValues = 0;
+
+	for (int i = 0; i < getTotalExperimentalAttributes(); ++i) {
+		const String& attribute = getAttribute(i);
+
+		if (attribute == "creatureLevel" || attribute == "modifier") {
+			continue;
+		}
+
+		setStaticValue(attribute);
+	}
+}
+
 void LootValues::setStaticValues() {
 	dynamicValues = 0;
 

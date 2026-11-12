@@ -11,7 +11,7 @@ armor_segment_composite_advanced = {
 		{"armor_action_encumbrance",13,1,0},
 		{"armor_mind_encumbrance",16,1,0},
 		{"armor_rating",1,1,0, true},
-		{"armor_special_type",256,256,0, true},
+		{"armor_special_type",0,0,0, true},
 		{"armor_special_effectiveness",15,35,10},
 		{"armor_special_integrity",100,100,0, true},
 		{"useCount",1,11,0},

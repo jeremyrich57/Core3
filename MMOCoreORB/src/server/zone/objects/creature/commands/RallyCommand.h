@@ -58,7 +58,7 @@ public:
 		if (leader == nullptr || group == nullptr)
 			return false;
 
-		int duration = 30;
+		int duration = 300; // 5 minutes, matching Steady Aim
 
 		leader->sendSystemMessage("@cbt_spam:rally_success_single"); //"You rally the group!"
 		sendRallyCombatSpam(leader, group, true);

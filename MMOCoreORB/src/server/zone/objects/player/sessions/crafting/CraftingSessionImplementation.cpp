@@ -1395,12 +1395,16 @@ void CraftingSessionImplementation::createPrototype(int clientCounter, bool crea
 		String xpType = manufactureSchematic->getDraftSchematic()->getXpType();
 		int xp = manufactureSchematic->getDraftSchematic()->getXpAmount();
 
+		// QoL: hand-crafting takes 1-10 seconds, scaled by schematic complexity (1-60+)
+		// instead of the original complexity * 2 seconds.
+		int craftTime = Math::clamp(1, (int)ceil(manufactureSchematic->getComplexity() / 6.f), 10);
+
 		if (createItem) {
-			startCreationTasks(manufactureSchematic->getComplexity() * 2, false);
+			startCreationTasks(craftTime, false);
 
 		} else {
 			// This is for practicing
-			startCreationTasks(manufactureSchematic->getComplexity() * 2, true);
+			startCreationTasks(craftTime, true);
 			xp = round(xp * 1.05f);
 		}
 

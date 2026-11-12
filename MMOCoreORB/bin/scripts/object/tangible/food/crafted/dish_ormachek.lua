@@ -44,21 +44,22 @@
 object_tangible_food_crafted_dish_ormachek = object_tangible_food_crafted_shared_dish_ormachek:new {
 	templateType = CONSUMABLE,
 
-	duration = 11,
+	useCount = 3, -- uncrafted stack size; crafted rolls quantityMin-quantityMax
+	duration = 600, -- seconds (uncrafted = minimum); crafted items roll flavorMin-flavorMax
 	filling = 10,
-	nutrition = 10,
+	nutrition = 15, -- +15 xp bonus (uncrafted = minimum); added to the global XP multiplier (4x -> 4.15x)
 
-	effectType = 3, -- Event Based Buff
-	eventTypes = {XPAWARDED},
+	effectType = 2, -- Timed Duration Buff
+	eventTypes = {},
 
 	fillingMin = 90,
 	fillingMax = 55,
-	flavorMin = 11,
-	flavorMax = 25,
-	nutritionMin = 3,
-	nutritionMax = 5,
-	quantityMin = 1,
-	quantityMax = 1,
+	flavorMin = 600, -- 10 minutes at 0% flavor
+	flavorMax = 1800, -- 30 minutes at 100% flavor
+	nutritionMin = 15, -- crafted: +15% xp at 0% nutrition
+	nutritionMax = 25, -- crafted: +25% xp at 100% nutrition
+	quantityMin = 3,
+	quantityMax = 5,
 
 	modifiers = { "xp_increase", 0 },
 

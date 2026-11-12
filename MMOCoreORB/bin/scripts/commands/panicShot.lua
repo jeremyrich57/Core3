@@ -44,7 +44,7 @@
 PanicShotCommand = {
 	name = "panicshot",
 
-	damageMultiplier = 2.0,
+	damageMultiplier = 4.0,
 	speedMultiplier = 3.0,
 	healthCostMultiplier = 0.5,
 	actionCostMultiplier = 1.25,

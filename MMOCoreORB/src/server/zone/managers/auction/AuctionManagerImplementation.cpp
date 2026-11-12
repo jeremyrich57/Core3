@@ -35,6 +35,7 @@
 #include "AuctionSearchTask.h"
 #include "server/zone/objects/factorycrate/FactoryCrate.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
+#include "server/zone/managers/vendor/SystemVendorManager.h"
 
 void AuctionManagerImplementation::initialize() {
 	Locker locker(_this.getReferenceUnsafeStaticCast());
@@ -370,6 +371,11 @@ void AuctionManagerImplementation::doAuctionMaint(TerminalListVector* items, con
 				continue;
 			}
 
+			// System vendor listings are transient and ownerless, SystemVendorManager maintains them
+			if (item->isSystemVendorItem()) {
+				continue;
+			}
+
 			ManagedReference<SceneObject*> vendor = zoneServer->getObject(item->getVendorID());
 			ManagedReference<PlayerManager*> playerManager = zoneServer->getPlayerManager();
 			String ownerName = playerManager->getPlayerName(item->getOwnerID());
@@ -545,6 +551,16 @@ void AuctionManagerImplementation::addSaleItem(CreatureObject* player, uint64 ob
 		error() << "addSaleItem(plyer=" << player->getObjectID() << ", objectid=" << objectid << "): Vendor has null zone.";
 
 		ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::UNKNOWNERROR);
+
+		if (soldMessage != nullptr) {
+			player->sendMessage(soldMessage);
+		}
+
+		return;
+	}
+
+	if (SystemVendorManager::isSystemVendor(vendor)) {
+		ItemSoldMessage* soldMessage = new ItemSoldMessage(objectid, ItemSoldMessage::VENDORNOTWORKING);
 
 		if (soldMessage != nullptr) {
 			player->sendMessage(soldMessage);
@@ -910,6 +926,21 @@ AuctionItem* AuctionManagerImplementation::createVendorItem(CreatureObject* play
 
 	uint64 vendorExpire = time(0) + AuctionManager::VENDOREXPIREPERIOD;
 	uint64 commodityExpire = time(0) + AuctionManager::COMMODITYEXPIREPERIOD;
+	uint64 bazaarExpire = time(0) + AuctionManager::BAZAAREXPIREPERIOD;
+
+	// Bid auctions run for the duration the seller picked in the sell window
+	uint64 auctionExpire = 0;
+
+	if (auction) {
+		uint32 auctionDuration = duration;
+
+		if (auctionDuration < AuctionManager::MINAUCTIONDURATION)
+			auctionDuration = AuctionManager::MINAUCTIONDURATION;
+		else if (auctionDuration > AuctionManager::MAXAUCTIONDURATION)
+			auctionDuration = AuctionManager::MAXAUCTIONDURATION;
+
+		auctionExpire = time(0) + auctionDuration;
+	}
 
 	String playername = player->getFirstName().toLowerCase();
 	String descr = description.toString();
@@ -974,13 +1005,13 @@ AuctionItem* AuctionManagerImplementation::createVendorItem(CreatureObject* play
 			item->setOfferToID(vendorData->getOwnerId());
 			item->setExpireTime(commodityExpire);
 		} else {
-			item->setExpireTime(vendorExpire);
+			item->setExpireTime(auction ? auctionExpire : vendorExpire);
 
 			if(auctionMap->getVendorItemCount(vendor, true) == 0)
 				sendVendorUpdateMail(vendor, false);
 		}
 	} else {
-		item->setExpireTime(commodityExpire);
+		item->setExpireTime(auction ? auctionExpire : bazaarExpire);
 	}
 
 	ObjectManager::instance()->persistObject(item, 0, "auctionitems");
@@ -1342,6 +1373,14 @@ void AuctionManagerImplementation::buyItem(CreatureObject* player, uint64 object
 		return;
 	}
 
+	if (item->isSystemVendorItem()) {
+		int result = SystemVendorManager::instance()->purchaseItem(player, vendor, item);
+
+		BaseMessage* msg = new BidAuctionResponseMessage(objectid, result);
+		player->sendMessage(msg);
+		return;
+	}
+
 	if (item->getOwnerID() == player->getObjectID()) {
 		BaseMessage* msg = new BidAuctionResponseMessage(objectid, BidAuctionResponseMessage::PURCHASEFAILED);
 		player->sendMessage(msg);
@@ -1497,6 +1536,17 @@ void AuctionManagerImplementation::retrieveItem(CreatureObject* player, uint64 o
 		return;
 	}
 
+	// After an instant buy the vendor UI asks to retrieve the item from the stockroom. A system
+	// vendor purchase already placed a fresh copy in the inventory, so acknowledge without
+	// transferring anything (the listed object stays on the vendor).
+	ManagedReference<AuctionItem*> systemItem = auctionMap->getItem(objectid);
+
+	if (systemItem != nullptr && systemItem->isSystemVendorItem()) {
+		msg = new RetrieveAuctionItemResponseMessage(objectid, 0);
+		player->sendMessage(msg);
+		return;
+	}
+
 	int res = checkRetrieve(player, objectid, vendor);
 
 	if (res != 0) {
@@ -1633,7 +1683,7 @@ AuctionQueryHeadersResponseMessage* AuctionManagerImplementation::fillAuctionQue
 					continue;
 				}
 
-				if (!item->isAuction() && item->getExpireTime() <= now) {
+				if (!item->isAuction() && !item->isSystemVendorItem() && !item->isNonExpiringVendorSale() && item->getExpireTime() <= now) {
 					Core::getTaskManager()->executeTask([=] () {
 						expireSale(item);
 					}, "ExpireSaleLambda");

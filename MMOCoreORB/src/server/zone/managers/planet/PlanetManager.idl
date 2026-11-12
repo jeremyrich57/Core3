@@ -70,6 +70,9 @@ class PlanetManager extends ManagedService implements Logger {
 	protected int starportLandedTime;
 	protected int starportLandingTime;
 
+	// When true, shuttles never depart: they stay landed and are always boardable.
+	protected transient boolean shuttlesAlwaysDocked;
+
 	public static final int SHUTTLEPORT = 0;
 	public static final int STARPORT = 1;
 
@@ -129,6 +132,8 @@ class PlanetManager extends ManagedService implements Logger {
 		starportAwayTime = 60;
 		starportLandedTime = 120;
 		starportLandingTime = 14;
+
+		shuttlesAlwaysDocked = false;
 
 		weatherManager = null;
 		gcwManager = null;

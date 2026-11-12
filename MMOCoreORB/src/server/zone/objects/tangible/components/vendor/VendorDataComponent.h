@@ -32,6 +32,10 @@ protected:
 
 	bool adBarking;
 
+	// Transient, set by SystemVendorManager for server-owned NPC vendors. These have no
+	// owner, never pay maintenance and only sell their configured stock.
+	bool systemVendor;
+
 	SerializableTime emptyTimer;
 	SerializableTime inactiveTimer;
 
@@ -44,6 +48,11 @@ protected:
 	SerializableString barkAnimation;
 
 	float originalDirection;
+
+	// Transient, system vendors only: greet each player once as they walk up. A random
+	// phrase is picked per greeting, "{name}" is replaced with the player's first name.
+	Vector<String> greetingPhrases;
+	float greetingRange;
 
 	// Transient, stamped only by VendorManager::destroyVendor() so the destroy hooks can tell
 	// a sanctioned removal from one driven straight at the object (exploit, stray command).
@@ -67,6 +76,9 @@ public:
 
 		BARKRANGE           = 15, // 15 Meters
 		BARKINTERVAL        = 60 * 2, // 2 Minutes
+
+		GREETINTERVAL       = 4, // Seconds between two system vendor greetings
+		GREETFORGETRANGE    = 10, // Meters past greetingRange before a player can be greeted again
 
 		// A sanctioned destroy runs start to finish inside one call, anything arriving at the
 		// destroy hooks later than this is a separate removal and gets reported
@@ -134,7 +146,18 @@ public:
 			updateUID();
 	}
 
+	inline void setSystemVendor(bool val) {
+		systemVendor = val;
+	}
+
+	inline bool isSystemVendor() const {
+		return systemVendor;
+	}
+
 	inline int getOwnershipRightsOf(CreatureObject* player) {
+		if (systemVendor)
+			return 1; // Browse as a customer of someone else's vendor
+
 		if (!initialized)
 			return 2; // mark not initalized
 
@@ -215,6 +238,9 @@ public:
 	}
 
 	inline bool isOnStrike() {
+		if (systemVendor)
+			return false;
+
 		return maintAmount <= 0;
 	}
 
@@ -271,6 +297,29 @@ public:
 		Locker locker(&adBarkingMutex);
 		vendorBarks.removeAll();
 	}
+
+	void setGreeting(const Vector<String>& phrases, float range) {
+		Locker locker(&adBarkingMutex);
+		greetingPhrases = phrases;
+		greetingRange = range;
+	}
+
+	bool hasGreeting() {
+		Locker locker(&adBarkingMutex);
+		return systemVendor && !greetingPhrases.isEmpty();
+	}
+
+	float getGreetingRange() {
+		Locker locker(&adBarkingMutex);
+		return greetingRange;
+	}
+
+	bool canGreet() {
+		Locker locker(&adBarkingMutex);
+		return (time(0) - lastBark >= GREETINTERVAL);
+	}
+
+	String getGreetingPhrase(CreatureObject* player);
 
 	float getOriginalDirection() {
 		return originalDirection;

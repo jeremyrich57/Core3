@@ -19,6 +19,9 @@ const CLIENT_FILES: &str = include_str!("../resources/client_files.txt");
 /// Copied from the source install on first install if present; the client edits options.cfg itself.
 const SEED_CONFIGS: &[&str] = &["swgemu_preload.cfg", "options.cfg"];
 
+/// Optional user overrides in the game folder, included last when present. Never written by the launcher.
+const USER_CONFIG: &str = "user.cfg";
+
 /// Stock TRE search order from SWGEmu's swgemu_live.cfg (key, file). Higher priority wins.
 const STOCK_SEARCH_TREES: &[(&str, &str)] = &[
     ("searchTree_00_25", "default_patch.tre"),
@@ -182,7 +185,13 @@ pub fn install(app: &AppHandle, source: &str, game: &str) -> Result<(), String> 
 
 /// Write the .cfg files that point the client at the server and add the custom TREs
 /// (highest priority first) above the stock search order.
-pub fn write_config(game: &str, server: &Server, custom_tres: &[String]) -> Result<(), String> {
+/// `font_locale` selects the large-text fonts from the custom TRE (None = stock fonts).
+pub fn write_config(
+    game: &str,
+    server: &Server,
+    custom_tres: &[String],
+    font_locale: Option<&str>,
+) -> Result<(), String> {
     let game = Path::new(game);
     let write = |name: &str, text: String| {
         fs::write(game.join(name), text).map_err(|e| format!("Writing {name}: {e}"))
@@ -190,6 +199,10 @@ pub fn write_config(game: &str, server: &Server, custom_tres: &[String]) -> Resu
 
     let mut includes = vec!["swgemu_login.cfg", "swgemu_live.cfg"];
     includes.extend(SEED_CONFIGS.iter().filter(|f| game.join(f).is_file()));
+    // Hand-edited local overrides (e.g. "[ClientGame] 0fd345d9=true" to enable admin commands)
+    if game.join(USER_CONFIG).is_file() {
+        includes.push(USER_CONFIG);
+    }
     write(
         "swgemu.cfg",
         includes.iter().map(|f| format!(".include \"{f}\"\n")).collect(),
@@ -214,6 +227,9 @@ pub fn write_config(game: &str, server: &Server, custom_tres: &[String]) -> Resu
     }
     live += "\n[SharedNetwork]\n\tnetworkHandlerDispatchThrottle=true\n";
     live += "\n[ClientUserInterface]\n\tmessageOfTheDayTable=live_motd\n";
+    if let Some(locale) = font_locale {
+        live += &format!("\n[SharedGame]\n\tfontLocale={locale}\n");
+    }
     write("swgemu_live.cfg", live)
 }
 
@@ -269,16 +285,21 @@ mod tests {
         let s = Server { host: "example.org".into(), port: 44453, ..Default::default() };
         let game = dir.to_str().unwrap();
 
-        write_config(game, &s, &["b.tre".into(), "a.tre".into()]).unwrap();
+        write_config(game, &s, &["b.tre".into(), "a.tre".into()], None).unwrap();
 
         let live = fs::read_to_string(dir.join("swgemu_live.cfg")).unwrap();
         assert!(live.contains("maxSearchPriority=28\n"));
         assert!(live.find("searchTree_00_27=b.tre").unwrap() < live.find("searchTree_00_26=a.tre").unwrap());
         assert!(live.contains("searchTree_00_25=default_patch.tre"));
+        assert!(!live.contains("fontLocale"));
         let login = fs::read_to_string(dir.join("swgemu_login.cfg")).unwrap();
         assert!(login.contains("loginServerAddress0=example.org") && login.contains("loginServerPort0=44453"));
         let main = fs::read_to_string(dir.join("swgemu.cfg")).unwrap();
         assert_eq!(main, ".include \"swgemu_login.cfg\"\n.include \"swgemu_live.cfg\"\n.include \"options.cfg\"\n");
+
+        write_config(game, &s, &["a.tre".into()], Some("l1")).unwrap();
+        let live = fs::read_to_string(dir.join("swgemu_live.cfg")).unwrap();
+        assert!(live.contains("[SharedGame]\n\tfontLocale=l1\n"));
         let _ = fs::remove_dir_all(&dir);
     }
 

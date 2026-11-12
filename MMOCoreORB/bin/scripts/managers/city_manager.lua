@@ -48,10 +48,10 @@ which carries forward this exception.
 	GLOBAL CITY SETTINGS
 	--------------------
 --]]
---The amount of time in minutes before the city specialization may be changed again.
-CitySpecializationCooldown = 604800000
+--The amount of time in milliseconds before the city specialization may be changed again.
+CitySpecializationCooldown = 86400000
 
---The amount of time in minutes before another withdrawal from the city treasury may be made.
+--The amount of time in milliseconds before another withdrawal from the city treasury may be made.
 TreasuryWithdrawalCooldown = 86400000
 
 --The number of city update cycles that must pass before mayoral voting process is complete.
@@ -60,8 +60,12 @@ CityVotingCycles = 3
 --The number of city update cyles after which to lock the mayoral voting race registration.
 CityVotingCyclesUntilLocked = 2
 
---The amount of time in minutes before the city performs an update.
-CityUpdateInterval = 10080
+--The amount of time in minutes before the city performs an update (rank changes, elections).
+CityUpdateInterval = 1440
+
+--The amount of time in minutes between city maintenance and income tax collection.
+--Checked on each city update, so it should be a multiple of CityUpdateInterval.
+CityMaintenanceInterval = 10080
 
 --The amount of time in minutes a new city has to gain enough citizens to remain a city.
 NewCityGracePeriod = 1440
@@ -73,8 +77,15 @@ OldCityGracePeriod = 4320
 EnableCityWarn = false
 
 --The number of citizens required to achieve each city rank. (Outpost, Village, Township, City, Metropolis)
-CitizensPerRank = {2, 4, 6, 8, 10}
+--Outpost is skipped (see NewCityRank), so its entry should match Village's.
+CitizensPerRank = {1, 1, 2, 3, 5}
 --CitizensPerRank = {10, 20, 35, 55, 85}
+
+--The rank a newly placed city starts at, and the lowest rank a city can contract to. 2 = Village (skips Outpost).
+NewCityRank = 2
+
+--The minimum city rank to set a specialization, unless the specialization sets its own minRank. 4 = City.
+SpecializationMinRank = 4
 
 --The radius in meters of the city at each city rank. (Outpost, Village, Township, City, Metropolis)
 RadiusPerRank = {150, 200, 300, 400, 450}
@@ -85,7 +96,7 @@ TrainersPerRank = 3
 MissionTerminalsPerRank = 3
 
 -- Amount to discount city maintenance  float.  1 = 100%, .75 =75%, .5=50% etc
-maintenanceDiscount = 1.0
+maintenanceDiscount = 0.35
 
 --[[
 	CITIES ALLOWED PER PLANET
@@ -186,7 +197,7 @@ CityTaxes = {
 CitySpecializations = {
 	{--Sample Rich
 		name = "@city/city:city_spec_sample_rich",
-		cost = 70000,
+		cost = 35000,
 		skillMods = {
 			{"private_spec_samplesize", 20},
 			{"private_spec_samplerate", 10}
@@ -194,51 +205,104 @@ CitySpecializations = {
 	},
 	{--Manufacturing Center
 		name = "@city/city:city_spec_industry",
-		cost = 50000,
+		cost = 25000,
 		skillMods = {
 			{"private_spec_assembly", 10}
 		}
 	},
 	{--Medical Center
 		name = "@city/city:city_spec_doctor",
-		cost = 80000,
+		cost = 40000,
 		skillMods = {
 			{"private_medical_rating", 10}
 		}
 	},
 	{--Clone Lab
 		name = "@city/city:city_spec_cloning",
-		cost = 80000,
+		cost = 40000,
 		skillMods = {
-			{"private_spec_cloning", 20}
+			{"private_spec_cloning", 50}
 		}
 	},
 	{--Research Center
 		name = "@city/city:city_spec_research",
-		cost = 125000,
+		cost = 60000,
 		skillMods = {
 			{"private_spec_experimentation", 15}
 		}
 	},
 	{--Improved Job Market
 		name = "@city/city:city_spec_missions",
-		cost = 80000,
+		cost = 40000,
 		skillMods = {
 			{"private_spec_missions", 15}
 		}
 	},
 	{--Entertainment District
 		name = "@city/city:city_spec_entertainer",
-		cost = 80000,
+		cost = 40000,
 		skillMods = {
 			{"private_spec_entertainer", 10}
 		}
 	},
 	{--Stronghold
 		name = "@city/city:city_spec_stronghold",
-		cost = 150000,
+		cost = 75000,
 		skillMods = {
 			{"private_defense", 90}
+		}
+	},
+
+	--[[
+		UPGRADE SPECIALIZATIONS
+		Combine stock specializations. Offered to a mayor who has every ability in 'requires'
+		(granted by Politician boxes). 'description' is shown on the confirmation window.
+		Cost is the sum of the components plus ~10%. minRank 5 = Metropolis.
+	--]]
+	{--Industrial Center: Manufacturing Center + Research Center
+		name = "Industrial Center",
+		minRank = 5,
+		description = "Combines the Manufacturing Center and Research Center specializations: +10 assembly and +15 experimentation for crafters in the city.",
+		cost = 95000,
+		requires = {"city_spec_industry", "city_spec_research"},
+		skillMods = {
+			{"private_spec_assembly", 10},
+			{"private_spec_experimentation", 15}
+		}
+	},
+	{--Wellness Center: Medical Center + Entertainment District
+		name = "Wellness Center",
+		minRank = 5,
+		description = "Combines the Medical Center and Entertainment District specializations: +10 medical rating for healers, and +10% performance experience and faster patron buffs for entertainers in the city.",
+		cost = 90000,
+		requires = {"city_spec_doctor", "city_spec_entertainer"},
+		skillMods = {
+			{"private_medical_rating", 10},
+			{"private_spec_entertainer", 10}
+		}
+	},
+	{--Sanctuary: Stronghold + Medical Center + Clone Lab
+		name = "Sanctuary",
+		minRank = 5,
+		description = "Combines the Stronghold, Medical Center and Clone Lab specializations: +90 defense for city militia, +10 medical rating for healers, and 50% less cloning wounds and equipment decay at the city's cloning facilities.",
+		cost = 170000,
+		requires = {"city_spec_stronghold", "city_spec_doctor", "city_spec_cloning"},
+		skillMods = {
+			{"private_defense", 90},
+			{"private_medical_rating", 10},
+			{"private_spec_cloning", 50}
+		}
+	},
+	{--Business District: Sample Rich + Improved Job Market
+		name = "Business District",
+		minRank = 5,
+		description = "Combines the Sample Rich and Improved Job Market specializations: +20% sample size and better sampling for surveyors, and +15% mission rewards in the city.",
+		cost = 85000,
+		requires = {"city_spec_sample_rich", "city_spec_missions"},
+		skillMods = {
+			{"private_spec_samplesize", 20},
+			{"private_spec_samplerate", 10},
+			{"private_spec_missions", 15}
 		}
 	},
 }

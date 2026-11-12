@@ -127,6 +127,12 @@ class ArmorObject extends WearableObject {
 	@read
 	public native boolean isVulnerable(int type);
 
+	@local
+	@read
+	public native int getNativeSpecialResists();
+
+	private native void applyArmorProfileMigration();
+
 	@dirty
 	public boolean isArmorObject() {
 		return true;

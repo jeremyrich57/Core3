@@ -13,6 +13,11 @@
 #include "server/zone/Zone.h"
 #include "server/zone/SpaceZone.h"
 #include "server/zone/managers/player/PlayerManager.h"
+#include "server/zone/managers/player/PermissionLevelList.h"
+#include "conf/ConfigManager.h"
+#include "server/login/account/Account.h"
+#include "server/login/account/AccountManager.h"
+#include "server/zone/managers/skill/SkillManager.h"
 #include "server/zone/managers/reaction/ReactionManager.h"
 #include "server/zone/packets/creature/CreatureObjectDeltaMessage6.h"
 #include "server/zone/objects/creature/CreatureObject.h"
@@ -38,6 +43,58 @@ public:
 
 	void parse(Message* message) {
 		characterID = message->parseLong(6);
+	}
+
+	// Force a SQL read: the cached Account object can hold a stale admin_level.
+	// Staff skills are awarded with client notification so the commands show up without a relog.
+	static void syncAccountAdminLevel(CreatureObject* player, PlayerObject* ghost, ZoneServer* zoneServer) {
+		Reference<Account*> account = AccountManager::getAccount(ghost->getAccountID(), true);
+
+		if (account == nullptr) {
+			player->error() << "Admin sync: no account for " << player->getFirstName();
+			return;
+		}
+
+		const int accountLevel = account->getAdminLevel();
+
+		if (accountLevel <= 0 || accountLevel < ghost->getAdminLevel() || PermissionLevelList::instance()->getPermissionSkills(accountLevel) == nullptr)
+			return;
+
+		ManagedReference<CreatureObject*> playerRef = player;
+		ManagedReference<ZoneServer*> zoneServerRef = zoneServer;
+
+		Core::getTaskManager()->executeTask([zoneServerRef, playerRef, accountLevel] () {
+			Locker locker(playerRef);
+
+			auto ghost = playerRef->getPlayerObject();
+			auto skillManager = zoneServerRef->getSkillManager();
+			auto playerManager = zoneServerRef->getPlayerManager();
+			auto skills = PermissionLevelList::instance()->getPermissionSkills(accountLevel);
+
+			if (ghost == nullptr || skillManager == nullptr || playerManager == nullptr || skills == nullptr)
+				return;
+
+			ghost->setAdminLevel(accountLevel);
+
+			int granted = 0;
+
+			for (int i = 0; i < skills->size(); ++i) {
+				const String& skill = skills->get(i);
+
+				if (playerRef->hasSkill(skill))
+					continue;
+
+				if (skillManager->awardSkill(skill, playerRef, true, true, true)) {
+					playerRef->sendSystemMessage("Staff skill granted: " + skill);
+					++granted;
+				}
+			}
+
+			playerManager->updatePermissionName(playerRef, accountLevel);
+
+			if (granted > 0)
+				playerRef->info(true) << "Admin sync: " << playerRef->getFirstName() << " set to level " << accountLevel << ", " << granted << " staff skill(s) granted";
+		}, "SyncAccountAdminLevelLambda");
 	}
 
 	static void connectPlayer(SceneObject* obj, uint64_t characterID, CreatureObject* player, ZoneClientSession* client, ZoneServer* zoneServer) {
@@ -362,6 +419,17 @@ public:
 		// Set the player online & notify
 		ghost->setOnline();
 		ghost->notifyOnline();
+
+		// Sync existing characters with their account's staff level (admin_level in the accounts table);
+		// otherwise it is only applied at character creation
+		syncAccountAdminLevel(player, ghost, zoneServer);
+
+		// Raise characters to the configured lot cap (the persisted default is 10). Never lowers,
+		// so lots granted with /adjustLotCount are kept.
+		const int maxLots = Math::min(ConfigManager::instance()->getInt("Core3.MaxLotsPerCharacter", 10), 255);
+
+		if (ghost->getMaximumLots() < maxLots)
+			ghost->setMaximumLots(maxLots);
 
 		auto chatManager = zoneServer->getChatManager();
 

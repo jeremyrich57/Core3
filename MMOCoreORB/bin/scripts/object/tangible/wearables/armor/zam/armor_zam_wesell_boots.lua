@@ -84,7 +84,9 @@ object_tangible_wearables_armor_zam_armor_zam_wesell_boots = object_tangible_wea
 				"object/mobile/vendor/zabrak_male.iff" },
 
 	-- Damage types in WeaponObject
-	vulnerability = ACID + ENERGY + STUN + LIGHTSABER,
+	vulnerability = COLD + ELECTRICITY + STUN + LIGHTSABER,
+
+	specialResists = HEAT + ACID,
 
 	-- These are default Blue Frog stats
 	healthEncumbrance = 1,
@@ -110,7 +112,7 @@ object_tangible_wearables_armor_zam_armor_zam_wesell_boots = object_tangible_wea
 	experimentalGroupTitles = {"null", "null", "null", "null", "exp_quality", "exp_durability", "exp_durability", "exp_durability", "exp_durability", "null", "null", "exp_resistance", "null"},
 	experimentalSubGroupTitles = {"null", "null", "sockets", "hit_points", "armor_effectiveness", "armor_integrity", "armor_health_encumbrance", "armor_action_encumbrance", "armor_mind_encumbrance", "armor_rating", "armor_special_type", "armor_special_effectiveness", "armor_special_integrity"},
 	experimentalMin = {0, 0, 0, 1000, 1, 11250, 8, 8, 6, 1, 4, 1, 18750},
-	experimentalMax = {0, 0, 0, 1000, 20, 18750, 5, 5, 3, 1, 4, 40, 31250},
+	experimentalMax = {0, 0, 0, 1000, 66, 18750, 5, 5, 3, 1, 4, 40, 31250},
 	experimentalPrecision = {0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 4, 1, 1, 1, 1, 1, 1, 4, 4, 4, 1},
 }

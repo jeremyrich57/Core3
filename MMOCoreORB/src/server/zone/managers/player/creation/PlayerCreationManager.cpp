@@ -27,6 +27,8 @@
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/zone/managers/player/creation/SendJtlRecruitment.h"
 
+#include <cmath>
+
 PlayerCreationManager::PlayerCreationManager() : Logger("PlayerCreationManager") {
 	setLogging(false);
 	setGlobalLogging(false);
@@ -39,6 +41,12 @@ PlayerCreationManager::PlayerCreationManager() : Logger("PlayerCreationManager")
 
 	startingCash = 100;
 	startingBank = 1000;
+	attributeRangeMin = 0;
+	attributeRangeMax = 0;
+	attributeRounding = 1;
+	sourceAttributeMin = 0;
+	sourceAttributeMax = 0;
+	statMigrationEnabled = true;
 
 	freeGodMode = false;
 
@@ -269,10 +277,207 @@ void PlayerCreationManager::loadLuaConfig() {
 	skillPoints = lua->getGlobalInt("skillPoints");
 	freeGodMode = lua->getGlobalByte("freeGodMode");
 
+	attributeRangeMin = lua->getGlobalInt("attributeRangeMin");
+	attributeRangeMax = lua->getGlobalInt("attributeRangeMax");
+	attributeRounding = lua->getGlobalInt("attributeRounding");
+
+	if (attributeRounding < 1) {
+		attributeRounding = 1;
+	}
+
+	loadAttributeSourceRange();
+
+	if (isAttributeRescaleEnabled()) {
+		info(true) << "Rescaling starting attributes from " << sourceAttributeMin << "-" << sourceAttributeMax
+			<< " to " << attributeRangeMin << "-" << attributeRangeMax << " (rounded to " << attributeRounding << ")";
+	}
+
+	statMigrationEnabled = validateAttributeLimits();
+
+	if (!statMigrationEnabled) {
+		error() << "datatables/creation/attribute_limits.iff does not match the attribute rescale in player_creation_manager.lua; "
+			<< "stat migration is disabled. Regenerate it with tools/patch/attribute_limits.py, rebuild the patch and restart.";
+	}
+
 	loadLuaStartingItems(lua);
 
 	delete lua;
 	lua = nullptr;
+}
+
+void PlayerCreationManager::loadAttributeSourceRange() {
+	sourceAttributeMin = 0;
+	sourceAttributeMax = 0;
+
+	bool found = false;
+
+	for (int r = 0; r < racialCreationData.size(); ++r) {
+		const RacialCreationData* racialData = racialCreationData.elementAt(r).getValue();
+
+		if (racialData == nullptr)
+			continue;
+
+		for (int p = 0; p < professionDefaultsInfo.size(); ++p) {
+			const ProfessionDefaultsInfo* professionData = professionDefaultsInfo.elementAt(p).getValue();
+
+			if (professionData == nullptr)
+				continue;
+
+			// Skip professions with no attribute data (not selectable at creation).
+			int professionTotal = 0;
+
+			for (int i = 0; i < 9; ++i)
+				professionTotal += professionData->getAttributeMod(i);
+
+			if (professionTotal <= 0)
+				continue;
+
+			for (int i = 0; i < 9; ++i) {
+				int value = professionData->getAttributeMod(i) + racialData->getAttributeMod(i);
+
+				if (!found || value < sourceAttributeMin)
+					sourceAttributeMin = value;
+
+				if (!found || value > sourceAttributeMax)
+					sourceAttributeMax = value;
+
+				found = true;
+			}
+		}
+	}
+}
+
+bool PlayerCreationManager::isAttributeRescaleEnabled() const {
+	return attributeRangeMax > attributeRangeMin && sourceAttributeMax > sourceAttributeMin;
+}
+
+int PlayerCreationManager::rescaleAttributeTotal(int total) const {
+	if (!isAttributeRescaleEnabled())
+		return total;
+
+	// Same mapping as rescaleAttribute, applied to the sum of all 9 attributes.
+	double ratio = (double) (attributeRangeMax - attributeRangeMin) / (sourceAttributeMax - sourceAttributeMin);
+	double scaled = 9 * attributeRangeMin + (total - 9 * sourceAttributeMin) * ratio;
+
+	return (int) std::lround(scaled / attributeRounding) * attributeRounding;
+}
+
+void PlayerCreationManager::rescaleAttributes(const int* values, int* result, const RacialCreationData* limits) const {
+	if (!isAttributeRescaleEnabled()) {
+		for (int i = 0; i < 9; ++i)
+			result[i] = values[i];
+
+		return;
+	}
+
+	double ratio = (double) (attributeRangeMax - attributeRangeMin) / (sourceAttributeMax - sourceAttributeMin);
+
+	int total = 0;
+	int units = 0;
+	double error[9]; // exact - rounded, in rounding units
+
+	// Round each attribute to the nearest step, like the attribute_limits.iff min/max values, so
+	// attributes within the original limits stay within the rescaled ones.
+	for (int i = 0; i < 9; ++i) {
+		total += values[i];
+
+		double exact = (attributeRangeMin + (values[i] - sourceAttributeMin) * ratio) / attributeRounding;
+		result[i] = (int) std::lround(exact);
+		error[i] = exact - result[i];
+		units += result[i];
+	}
+
+	// Then move whole steps until the attributes add up to the rescaled total: add to the attributes
+	// rounded down the most, or take from those rounded up the most. Stay within the species limits
+	// when possible.
+	int diff = rescaleAttributeTotal(total) / attributeRounding - units;
+	int step = diff > 0 ? 1 : -1;
+
+	for (int pass = 0; pass < 2 && diff != 0; ++pass) {
+		bool useLimits = pass == 0 && limits != nullptr;
+		bool adjusted[9] = {false, false, false, false, false, false, false, false, false};
+
+		while (diff != 0) {
+			int best = -1;
+
+			for (int i = 0; i < 9; ++i) {
+				if (adjusted[i])
+					continue;
+
+				if (useLimits) {
+					int value = (result[i] + step) * attributeRounding;
+
+					if (value < limits->getAttributeMin(i) || value > limits->getAttributeMax(i))
+						continue;
+				}
+
+				if (best == -1 || error[i] * step > error[best] * step)
+					best = i;
+			}
+
+			if (best == -1)
+				break;
+
+			result[best] += step;
+			error[best] -= step;
+			adjusted[best] = true;
+			diff -= step;
+		}
+	}
+
+	for (int i = 0; i < 9; ++i)
+		result[i] *= attributeRounding;
+}
+
+bool PlayerCreationManager::validateAttributeLimits() const {
+	if (!isAttributeRescaleEnabled())
+		return true;
+
+	// Every species/profession starting kit must add up to the species total in attribute_limits.iff,
+	// since migration requires the new attributes to add up to that total. The stock file's totals
+	// (5400-6100) never match rescaled attributes, so this also catches a missing or outdated patch.
+
+	for (int r = 0; r < racialCreationData.size(); ++r) {
+		const String& race = racialCreationData.elementAt(r).getKey();
+		const RacialCreationData* racialData = racialCreationData.elementAt(r).getValue();
+
+		if (racialData == nullptr)
+			continue;
+
+		for (int p = 0; p < professionDefaultsInfo.size(); ++p) {
+			const ProfessionDefaultsInfo* professionData = professionDefaultsInfo.elementAt(p).getValue();
+
+			if (professionData == nullptr)
+				continue;
+
+			int values[9];
+			int professionTotal = 0;
+
+			for (int i = 0; i < 9; ++i) {
+				values[i] = professionData->getAttributeMod(i) + racialData->getAttributeMod(i);
+				professionTotal += professionData->getAttributeMod(i);
+			}
+
+			if (professionTotal <= 0)
+				continue;
+
+			int rescaled[9];
+			rescaleAttributes(values, rescaled, racialData);
+
+			int total = 0;
+
+			for (int i = 0; i < 9; ++i)
+				total += rescaled[i];
+
+			if (total != racialData->getAttributeTotal()) {
+				error() << race << " " << professionDefaultsInfo.elementAt(p).getKey() << ": starting attributes add up to "
+					<< total << " but attribute_limits.iff total is " << racialData->getAttributeTotal();
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 void PlayerCreationManager::loadLuaStartingItems(Lua* lua) {
@@ -320,8 +525,12 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 	auto client = callback->getClient();
 	auto maxchars = ConfigManager::instance()->getInt("Core3.PlayerCreationManager.MaxCharactersPerGalaxy", 10);
 
+	// Minutes a non-staff account must wait between character creations; 0 disables the limit.
+	const int creationCooldownMinutes = ConfigManager::instance()->getInt("Core3.PlayerCreationManager.CharacterCreationCooldown", 60);
+	const int64 creationCooldownMs = (int64) creationCooldownMinutes * 60 * 1000;
+
 	if (client->getCharacterCount(zoneServer.get()->getGalaxyID()) >= maxchars) {
-		ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are limited to 10 characters per galaxy.", 0x0);
+		ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are limited to " + String::valueOf(maxchars) + " characters per galaxy.", 0x0);
 		client->sendMessage(errMsg);
 
 		return false;
@@ -449,7 +658,7 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 					playerManager->updatePermissionLevel(playerCreature, accountPermissionLevel);
 				}
 
-				if (accountPermissionLevel < 9) {
+				if (accountPermissionLevel < 9 && creationCooldownMinutes > 0) {
 #ifndef WITH_SWGREALMS_API
 					try {
 						StringBuffer query;
@@ -464,8 +673,8 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 
 							Time timeVal(sec);
 
-							if (timeVal.miliDifference() < 3600000) {
-								ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character per hour. Repeat attempts prior to 1 hour elapsing will reset the timer.", 0x0);
+							if (timeVal.miliDifference() < creationCooldownMs) {
+								ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character every " + String::valueOf(creationCooldownMinutes) + " minutes. Repeat attempts before the timer elapses will reset it.", 0x0);
 								client->sendMessage(errMsg);
 
 								playerCreature->destroyPlayerCreatureFromDatabase(true);
@@ -486,8 +695,8 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 					if (lastCreatedCharacter.containsKey(accID)) {
 						Time lastCreatedTime = lastCreatedCharacter.get(accID);
 
-						if (lastCreatedTime.miliDifference() < 3600000) {
-							ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character per hour. Repeat attempts prior to 1 hour elapsing will reset the timer.", 0x0);
+						if (lastCreatedTime.miliDifference() < creationCooldownMs) {
+							ErrorMessage* errMsg = new ErrorMessage("Create Error", "You are only permitted to create one character every " + String::valueOf(creationCooldownMinutes) + " minutes. Repeat attempts before the timer elapses will reset it.", 0x0);
 							client->sendMessage(errMsg);
 
 							playerCreature->destroyPlayerCreatureFromDatabase(true);
@@ -623,12 +832,14 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 	//Join auction chat room
 	ghost->addChatRoom(chatManager->getAuctionRoom()->getRoomID());
 
-	ManagedReference<SuiMessageBox*> box = new SuiMessageBox(playerCreature, SuiWindowType::NONE);
-	box->setPromptTitle("PLEASE NOTE");
-	box->setPromptText("You are limited to creating one character per hour. Attempting to create another character or deleting your character before the 1 hour timer expires will reset the timer.");
+	if (creationCooldownMinutes > 0) {
+		ManagedReference<SuiMessageBox*> box = new SuiMessageBox(playerCreature, SuiWindowType::NONE);
+		box->setPromptTitle("PLEASE NOTE");
+		box->setPromptText("You are limited to creating one character every " + String::valueOf(creationCooldownMinutes) + " minutes. Attempting to create another character or deleting your character before the timer expires will reset the timer.");
 
-	ghost->addSuiBox(box);
-	playerCreature->sendMessage(box->generateMessage());
+		ghost->addSuiBox(box);
+		playerCreature->sendMessage(box->generateMessage());
+	}
 
 	return true;
 }
@@ -755,6 +966,7 @@ void PlayerCreationManager::addProfessionStartingItems(CreatureObject* creature,
 
 	//Set the hams.
 	for (int i = 0; i < 9; ++i) {
+		// Raw value; rescaling happens in addRacialMods once the racial mod is added.
 		int mod = professionData->getAttributeMod(i);
 		creature->setBaseHAM(i, mod, false);
 		creature->setHAM(i, mod, false);
@@ -1069,8 +1281,16 @@ void PlayerCreationManager::addRacialMods(CreatureObject* creature,
 	if (racialData == nullptr)
 		racialData = racialCreationData.get(0);
 
+	int values[9];
+
+	for (int i = 0; i < 9; ++i)
+		values[i] = racialData->getAttributeMod(i) + creature->getBaseHAM(i);
+
+	int mods[9];
+	rescaleAttributes(values, mods, racialData);
+
 	for (int i = 0; i < 9; ++i) {
-		int mod = racialData->getAttributeMod(i) + creature->getBaseHAM(i);
+		int mod = mods[i];
 		creature->setBaseHAM(i, mod, false);
 		creature->setHAM(i, mod, false);
 		creature->setMaxHAM(i, mod, false);

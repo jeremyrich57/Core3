@@ -52,6 +52,9 @@ class AuctionItem extends ManagedObject {
 
 	protected int auctionOptions;
 
+	// Listing owned by a SystemVendorManager vendor, never saved and never expires
+	protected transient boolean systemVendorItem;
+
 	public final static int OPTION_PREMIUM = 0x400;
 	public final static int OPTION_WITHDRAW = 0x800;
 
@@ -87,6 +90,7 @@ class AuctionItem extends ManagedObject {
 		updated = false;
 
 		auctionOptions = 0;
+		systemVendorItem = false;
 		lastUpdateTime.updateToCurrentTime();
 	}
 
@@ -320,6 +324,24 @@ class AuctionItem extends ManagedObject {
 	@read
 	@local
 	private native Logger getLogger();
+
+	public void setSystemVendorItem(boolean value) {
+		systemVendorItem = value;
+	}
+
+	@read
+	public boolean isSystemVendorItem() {
+		return systemVendorItem;
+	}
+
+	/**
+	 * Fixed-price listings on player vendors never expire; they stay up until sold,
+	 * withdrawn, or the vendor itself is removed. Clients are sent 0 time remaining.
+	 */
+	@read
+	public boolean isNonExpiringVendorSale() {
+		return status == FORSALE && !auction && !onBazaar && !systemVendorItem;
+	}
 
 	@read
 	public boolean isPremiumAuction() {

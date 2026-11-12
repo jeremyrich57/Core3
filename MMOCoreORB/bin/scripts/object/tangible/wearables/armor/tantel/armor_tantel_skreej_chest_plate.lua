@@ -88,7 +88,9 @@ object_tangible_wearables_armor_tantel_armor_tantel_skreej_chest_plate = object_
 				"object/mobile/vendor/zabrak_male.iff" },
 
 	-- Damage types in WeaponObject
-	vulnerability = LIGHTSABER,
+	vulnerability = BLAST + ACID + STUN + LIGHTSABER,
+
+	specialResists = ENERGY + COLD,
 
 	-- These are default Blue Frog stats
 	healthEncumbrance = 75,
@@ -114,7 +116,7 @@ object_tangible_wearables_armor_tantel_armor_tantel_skreej_chest_plate = object_
 	experimentalGroupTitles = {"null", "null", "null", "exp_durability", "exp_quality", "exp_durability", "exp_durability", "exp_durability", "exp_durability", "null", "null", "exp_resistance", "null"},
 	experimentalSubGroupTitles = {"null", "null", "sockets", "hit_points", "armor_effectiveness", "armor_integrity", "armor_health_encumbrance", "armor_action_encumbrance", "armor_mind_encumbrance", "armor_rating", "armor_special_type", "armor_special_effectiveness", "armor_special_integrity"},
 	experimentalMin = {0, 0, 0, 1000, 1, 11250, 94, 33, 9, 1, 2, 5, 11250},
-	experimentalMax = {0, 0, 0, 1000, 20, 18750, 56, 20, 5, 1, 2, 30, 18750},
+	experimentalMax = {0, 0, 0, 1000, 55, 18750, 56, 20, 5, 1, 2, 30, 18750},
 	experimentalPrecision = {0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 4, 1, 1, 1, 1, 1, 1, 4, 4, 4, 1},
 }

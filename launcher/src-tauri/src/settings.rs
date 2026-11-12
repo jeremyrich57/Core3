@@ -49,6 +49,10 @@ pub struct Settings {
     pub servers: Vec<Server>,
     /// Index into `servers` of the one Play connects to.
     pub selected_server: usize,
+    /// Mods: in-game UI text size, "" (normal), "large" or "larger". Needs the server's patch TRE.
+    pub ui_text_size: String,
+    /// Mods: HUD icon size in percent, "" (normal) or an optional patch's size ("125", "150").
+    pub hud_scale: String,
 
     // Single-server fields from launcher 0.1.0, migrated into `servers` on load.
     #[serde(skip_serializing)]
@@ -60,6 +64,21 @@ pub struct Settings {
 }
 
 impl Settings {
+    /// The client's font locale for `ui_text_size` (see tools/patch/large_ui.py); None = stock fonts.
+    pub fn font_locale(&self) -> Option<&'static str> {
+        match self.ui_text_size.as_str() {
+            "large" => Some("l1"),
+            "larger" => Some("l2"),
+            _ => None,
+        }
+    }
+
+    /// Optional patches (core3_opt_<option>.tre) to load, from the Mods settings.
+    pub fn patch_options(&self) -> Vec<String> {
+        let hud = self.hud_scale.trim();
+        if hud.is_empty() { Vec::new() } else { vec![format!("hud{hud}")] }
+    }
+
     pub fn server(&self) -> Result<&Server, String> {
         self.servers
             .get(self.selected_server)

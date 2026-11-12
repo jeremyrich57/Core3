@@ -93,7 +93,9 @@ object_tangible_wearables_armor_mandalorian_armor_mandalorian_bicep_r = object_t
 				"object/mobile/vendor/zabrak_male.iff" },
 	
 	-- Damage types in WeaponObject
-	vulnerability = COLD + ELECTRICITY + STUN + LIGHTSABER,
+	vulnerability = COLD + ELECTRICITY + STUN,
+
+	specialResists = BLAST + LIGHTSABER,
 
 	-- These are default Blue Frog stats, These are also used as temporary DWB crafting stats. Needs to be adjusted to random color, and Blast should be a Special Resist. Encumberance on boots and all arm/hand armor are estimated. Helm/Chest/Leggings are correct. 
 	healthEncumbrance = 50,
@@ -104,15 +106,15 @@ object_tangible_wearables_armor_mandalorian_armor_mandalorian_bicep_r = object_t
 	rating = LIGHT,
 	maxCondition = 40000,
 
-	kinetic = 58,
-	energy = 58,
+	kinetic = 60,
+	energy = 60,
 	electricity = 0,
 	stun = 0,
-	blast = 65,
-	heat = 58,
+	blast = 75,
+	heat = 60,
 	cold = 0,
-	acid = 58,
-	lightSaber = 0
+	acid = 60,
+	lightSaber = 35
 }
 
 ObjectTemplates:addTemplate(object_tangible_wearables_armor_mandalorian_armor_mandalorian_bicep_r, "object/tangible/wearables/armor/mandalorian/armor_mandalorian_bicep_r.iff")

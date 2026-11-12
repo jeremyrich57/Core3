@@ -16,7 +16,11 @@ type Settings = {
   gameDir: string;
   servers: Server[];
   selectedServer: number;
+  uiTextSize: string;
+  hudScale: string;
 };
+
+type View = "home" | "settings" | "mods";
 
 type Status = { sourceProblem: string | null; installed: boolean };
 type Progress = { message: string; done: number; total: number };
@@ -32,7 +36,7 @@ export default function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [view, setView] = useState<View>("home");
   const [progress, setProgress] = useState<Progress | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const logEnd = useRef<HTMLDivElement>(null);
@@ -99,27 +103,47 @@ export default function App() {
       <header>
         <h1>Core3 Launcher</h1>
         <nav>
-          {!showSettings && (
-            <button className="link" onClick={() => run("open_game_settings")} disabled={busy || needsInstall}>
-              Game settings
+          {view === "home" ? (
+            <>
+              <button className="link" onClick={() => run("open_game_settings")} disabled={busy || needsInstall}>
+                Game settings
+              </button>
+              <button className="link" onClick={() => setView("mods")} disabled={busy}>
+                Mods
+              </button>
+              <button className="link" onClick={() => setView("settings")} disabled={busy}>
+                Launcher settings
+              </button>
+            </>
+          ) : (
+            <button className="link" onClick={() => setView("home")}>
+              Close
             </button>
           )}
-          <button className="link" onClick={() => setShowSettings((s) => !s)} disabled={busy}>
-            {showSettings ? "Close settings" : "Launcher settings"}
-          </button>
         </nav>
       </header>
 
-      {showSettings ? (
+      {view === "settings" ? (
         <SettingsForm
           initial={settings}
           onSave={async (s) => {
             if (await saveSettings(s)) {
               addLog("Settings saved.");
-              setShowSettings(false);
+              setView("home");
             }
           }}
-          onCancel={() => setShowSettings(false)}
+          onCancel={() => setView("home")}
+        />
+      ) : view === "mods" ? (
+        <ModsForm
+          initial={settings}
+          onSave={async (s) => {
+            if (await saveSettings(s)) {
+              addLog("Mods saved. They apply the next time you press Play.");
+              setView("home");
+            }
+          }}
+          onCancel={() => setView("home")}
         />
       ) : (
         <section className="home">
@@ -177,6 +201,57 @@ export default function App() {
         <div ref={logEnd} />
       </section>
     </main>
+  );
+}
+
+/** Optional client changes from the server's patches; they apply the next time the game starts. */
+function ModsForm({
+  initial,
+  onSave,
+  onCancel,
+}: {
+  initial: Settings;
+  onSave: (s: Settings) => void;
+  onCancel: () => void;
+}) {
+  const [s, setS] = useState(initial);
+
+  return (
+    <form
+      className="settings"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(s);
+      }}
+    >
+      <p className="muted small">
+        Optional changes to the game client, for high-resolution screens. They need this server's patches and apply
+        the next time you press Play.
+      </p>
+      <label>
+        In-game text size
+        <select value={s.uiTextSize} onChange={(e) => setS({ ...s, uiTextSize: e.target.value })}>
+          <option value="">Normal</option>
+          <option value="large">Large (about 1.2x)</option>
+          <option value="larger">Larger (about 1.4x)</option>
+        </select>
+        <span className="muted small">Some tight windows may clip text.</span>
+      </label>
+      <label>
+        HUD icon size
+        <select value={s.hudScale} onChange={(e) => setS({ ...s, hudScale: e.target.value })}>
+          <option value="">Normal</option>
+          <option value="125">Large (1.25x)</option>
+          <option value="150">Larger (1.5x)</option>
+        </select>
+        <span className="muted small">Toolbar, button bar, buff icons and combat queue.</span>
+      </label>
+
+      <div className="row end">
+        <button type="button" className="link" onClick={onCancel}>Cancel</button>
+        <button type="submit">Save</button>
+      </div>
+    </form>
   );
 }
 

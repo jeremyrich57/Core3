@@ -44,11 +44,13 @@
 SprayShotCommand = {
         name = "sprayshot",
 
-	damageMultiplier = 4.0,
+	damageMultiplier = 6.0,
 	speedMultiplier = 3.5,
 	healthCostMultiplier = 1,
 	actionCostMultiplier = 1,
 	mindCostMultiplier = 1,
+
+	poolsToDamage = HEALTH_ATTRIBUTE + ACTION_ATTRIBUTE + MIND_ATTRIBUTE,
 
 	stateEffects = {
 	  StateEffect(
