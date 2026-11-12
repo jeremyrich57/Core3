@@ -45,7 +45,7 @@ object_mobile_vehicle_shared_jetpack = SharedCreatureObjectTemplate:new {
 	clientTemplateFileName = "object/mobile/vehicle/shared_jetpack.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
 --[[
-	acceleration = {8,3},
+	acceleration = {15,4},
 	animationMapFilename = "",
 	appearanceFilename = "appearance/pv_jetpack_mandalorian.sat",
 	arrangementDescriptorFilename = "",
@@ -102,7 +102,7 @@ object_mobile_vehicle_shared_jetpack = SharedCreatureObjectTemplate:new {
 	snapToTerrain = 1,
 	socketDestinations = {},
 	species = 90,
-	speed = {13,7},
+	speed = {25,13},
 	stepHeight = 2,
 	structureFootprintFileName = "",
 	surfaceType = 0,
@@ -110,7 +110,7 @@ object_mobile_vehicle_shared_jetpack = SharedCreatureObjectTemplate:new {
 
 	targetable = 1,
 	totalCellNumber = 0,
-	turnRate = {77,154},
+	turnRate = {148,296},
 
 	useStructureFootprintOutline = 0,
 
@@ -128,7 +128,7 @@ object_mobile_vehicle_shared_landspeeder_av21 = SharedCreatureObjectTemplate:new
 	clientTemplateFileName = "object/mobile/vehicle/shared_landspeeder_av21.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
 --[[
-	acceleration = {10,3},
+	acceleration = {15,4},
 	animationMapFilename = "",
 	appearanceFilename = "appearance/pv_landspeeder_av21.sat",
 	arrangementDescriptorFilename = "",
@@ -185,7 +185,7 @@ object_mobile_vehicle_shared_landspeeder_av21 = SharedCreatureObjectTemplate:new
 	snapToTerrain = 1,
 	socketDestinations = {},
 	species = 90,
-	speed = {17,9},
+	speed = {25,13},
 	stepHeight = 2,
 	structureFootprintFileName = "",
 	surfaceType = 0,
@@ -193,7 +193,7 @@ object_mobile_vehicle_shared_landspeeder_av21 = SharedCreatureObjectTemplate:new
 
 	targetable = 1,
 	totalCellNumber = 0,
-	turnRate = {77,154},
+	turnRate = {113,226},
 
 	useStructureFootprintOutline = 0,
 
@@ -294,7 +294,7 @@ object_mobile_vehicle_shared_landspeeder_x31 = SharedCreatureObjectTemplate:new 
 	clientTemplateFileName = "object/mobile/vehicle/shared_landspeeder_x31.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
 --[[
-	acceleration = {7,2},
+	acceleration = {10,3},
 	animationMapFilename = "",
 	appearanceFilename = "appearance/pv_landspeeder_luke.sat",
 	arrangementDescriptorFilename = "",
@@ -351,7 +351,7 @@ object_mobile_vehicle_shared_landspeeder_x31 = SharedCreatureObjectTemplate:new 
 	snapToTerrain = 1,
 	socketDestinations = {},
 	species = 90,
-	speed = {11,6},
+	speed = {17,9},
 	stepHeight = 2,
 	structureFootprintFileName = "",
 	surfaceType = 0,
@@ -359,7 +359,7 @@ object_mobile_vehicle_shared_landspeeder_x31 = SharedCreatureObjectTemplate:new 
 
 	targetable = 1,
 	totalCellNumber = 0,
-	turnRate = {77,154},
+	turnRate = {119,238},
 
 	useStructureFootprintOutline = 0,
 
@@ -377,7 +377,7 @@ object_mobile_vehicle_shared_landspeeder_x34 = SharedCreatureObjectTemplate:new 
 	clientTemplateFileName = "object/mobile/vehicle/shared_landspeeder_x34.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
 --[[
-	acceleration = {8,3},
+	acceleration = {12,4},
 	animationMapFilename = "",
 	appearanceFilename = "appearance/pv_landspeeder_luke.sat",
 	arrangementDescriptorFilename = "",
@@ -434,7 +434,7 @@ object_mobile_vehicle_shared_landspeeder_x34 = SharedCreatureObjectTemplate:new 
 	snapToTerrain = 1,
 	socketDestinations = {},
 	species = 90,
-	speed = {13,7},
+	speed = {20,11},
 	stepHeight = 2,
 	structureFootprintFileName = "",
 	surfaceType = 0,
@@ -442,7 +442,7 @@ object_mobile_vehicle_shared_landspeeder_x34 = SharedCreatureObjectTemplate:new 
 
 	targetable = 1,
 	totalCellNumber = 0,
-	turnRate = {77,154},
+	turnRate = {118,236},
 
 	useStructureFootprintOutline = 0,
 
@@ -543,7 +543,7 @@ object_mobile_vehicle_shared_speederbike = SharedCreatureObjectTemplate:new {
 	clientTemplateFileName = "object/mobile/vehicle/shared_speederbike.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
 --[[
-	acceleration = {9,3},
+	acceleration = {12,4},
 	animationMapFilename = "",
 	appearanceFilename = "appearance/pv_speeder_bike.sat",
 	arrangementDescriptorFilename = "",
@@ -600,7 +600,7 @@ object_mobile_vehicle_shared_speederbike = SharedCreatureObjectTemplate:new {
 	snapToTerrain = 1,
 	socketDestinations = {},
 	species = 90,
-	speed = {15,8},
+	speed = {20,11},
 	stepHeight = 0.8,
 	structureFootprintFileName = "",
 	surfaceType = 0,
@@ -608,7 +608,7 @@ object_mobile_vehicle_shared_speederbike = SharedCreatureObjectTemplate:new {
 
 	targetable = 1,
 	totalCellNumber = 0,
-	turnRate = {90,180},
+	turnRate = {120,240},
 
 	useStructureFootprintOutline = 0,
 
@@ -709,7 +709,7 @@ object_mobile_vehicle_shared_speederbike_flash = SharedCreatureObjectTemplate:ne
 	clientTemplateFileName = "object/mobile/vehicle/shared_speederbike_flash.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
 --[[
-	acceleration = {10,3},
+	acceleration = {15,4},
 	animationMapFilename = "",
 	appearanceFilename = "appearance/pv_flash_speeder.sat",
 	arrangementDescriptorFilename = "",
@@ -766,7 +766,7 @@ object_mobile_vehicle_shared_speederbike_flash = SharedCreatureObjectTemplate:ne
 	snapToTerrain = 1,
 	socketDestinations = {},
 	species = 90,
-	speed = {17,9},
+	speed = {25,13},
 	stepHeight = 0.8,
 	structureFootprintFileName = "",
 	surfaceType = 0,
@@ -774,7 +774,7 @@ object_mobile_vehicle_shared_speederbike_flash = SharedCreatureObjectTemplate:ne
 
 	targetable = 1,
 	totalCellNumber = 0,
-	turnRate = {103,205},
+	turnRate = {151,302},
 
 	useStructureFootprintOutline = 0,
 
@@ -792,7 +792,7 @@ object_mobile_vehicle_shared_speederbike_swoop = SharedCreatureObjectTemplate:ne
 	clientTemplateFileName = "object/mobile/vehicle/shared_speederbike_swoop.iff"
 	--Data below here is deprecated and loaded from the tres, keeping for easy lookups
 --[[
-	acceleration = {10,3},
+	acceleration = {12,4},
 	animationMapFilename = "",
 	appearanceFilename = "appearance/pv_swoop_bike.sat",
 	arrangementDescriptorFilename = "",
@@ -849,7 +849,7 @@ object_mobile_vehicle_shared_speederbike_swoop = SharedCreatureObjectTemplate:ne
 	snapToTerrain = 1,
 	socketDestinations = {},
 	species = 90,
-	speed = {17,9},
+	speed = {20,11},
 	stepHeight = 0.8,
 	structureFootprintFileName = "",
 	surfaceType = 0,
@@ -857,7 +857,7 @@ object_mobile_vehicle_shared_speederbike_swoop = SharedCreatureObjectTemplate:ne
 
 	targetable = 1,
 	totalCellNumber = 0,
-	turnRate = {103,205},
+	turnRate = {121,242},
 
 	useStructureFootprintOutline = 0,
 

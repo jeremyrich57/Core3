@@ -17,6 +17,7 @@
 #include "server/zone/objects/region/Region.h"
 #include "server/zone/objects/creature/sui/RepairVehicleSuiCallback.h"
 #include "templates/customization/AssetCustomizationManagerTemplate.h"
+#include "templates/creature/SharedCreatureObjectTemplate.h"
 
 
 void VehicleObjectImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
@@ -80,6 +81,26 @@ void VehicleObjectImplementation::fillAttributeList(AttributeListMessage* alm, C
 
 void VehicleObjectImplementation::notifyInsertToZone(Zone* zone) {
 	SceneObjectImplementation::notifyInsertToZone(zone);
+
+	// Speeds are persisted from the template when the vehicle is created, but the client always moves it with the
+	// template's current values (tools/patch/vehicle_stats.py), so refresh them each time it's called.
+	const SharedCreatureObjectTemplate* creoData = dynamic_cast<SharedCreatureObjectTemplate*>(getObjectTemplate());
+
+	if (creoData != nullptr) {
+		const auto& speedTempl = creoData->getSpeed();
+
+		if (speedTempl.size() > 1) {
+			runSpeed = speedTempl.get(0);
+			walkSpeed = speedTempl.get(1);
+		}
+
+		const auto& accel = creoData->getAcceleration();
+
+		if (accel.size() > 1) {
+			runAcceleration = accel.get(0);
+			walkAcceleration = accel.get(1);
+		}
+	}
 
 	if( this->linkedCreature == nullptr )
 		return;
