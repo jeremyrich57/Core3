@@ -82,7 +82,7 @@ object_weapon_ranged_rifle_rifle_beam = object_weapon_ranged_rifle_shared_rifle_
 	xpType = "combat_rangedspecialize_rifle",
 
 	-- See http://www.ocdsoft.com/files/certifications.xls
-	-- Granted by Master Rifleman (patched skills.iff, tools/patch/skill_costs.py). Damage and speed match the T-21.
+	-- Granted by Master Rifleman (patched skills.iff, tools/patch/skill_costs.py). T-21 damage; speed halfway between the T-21 and the stock Beam Rifle.
 	certificationsRequired = { "cert_rifle_beam" },
 	-- See http://www.ocdsoft.com/files/accuracy.xls
 	creatureAccuracyModifiers = { "rifle_accuracy" },
@@ -120,7 +120,7 @@ object_weapon_ranged_rifle_rifle_beam = object_weapon_ranged_rifle_shared_rifle_
 	minDamage = 135,
 	maxDamage = 400,
 
-	attackSpeed = 7,
+	attackSpeed = 5.9,
 
 	woundsRatio = 8,
 
@@ -129,9 +129,9 @@ object_weapon_ranged_rifle_rifle_beam = object_weapon_ranged_rifle_shared_rifle_
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	experimentalGroupTitles = {"null", "null", "expDamage", "expDamage", "expDamage", "expDamage", "exp_durability", "expRange", "expEffeciency", "expEffeciency", "expEffeciency"},
 	experimentalSubGroupTitles = {"null", "null", "mindamage", "maxdamage", "attackspeed", "woundchance", "hitpoints", "midrangemod", "attackhealthcost", "attackactioncost", "attackmindcost"},
-	experimentalMin = {0, 0, 80, 200, 10.5, 19, 750, -10, 26, 58, 55},
-	experimentalMax = {0, 0, 115, 375, 6.5, 35, 1500, 10, 14, 32, 24},
-	experimentalPrecision = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	experimentalMin = {0, 0, 80, 200, 8.4, 19, 750, -10, 26, 58, 55},
+	experimentalMax = {0, 0, 115, 375, 5.4, 35, 1500, 10, 14, 32, 24},
+	experimentalPrecision = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 }
 
