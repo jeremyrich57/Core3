@@ -43,7 +43,8 @@ COST_OVERRIDES = {
     "science_medic_novice": 0,  # Novice Medic only; the rest of Medic keeps its stock cost
     "crafting_artisan_survey": 0,  # Artisan Survey I-IV (Novice Artisan keeps its stock 15)
     "crafting_artisan_business": 0,  # Artisan Business I-IV (Novice Merchant's prerequisite)
-    "crafting_merchant_novice": 0,  # Novice Merchant only; the rest of Merchant keeps its stock cost
+    "crafting_merchant_": 1,  # Every Merchant box costs 1 (the profession row itself is not a box)...
+    "crafting_merchant_novice": 0,  # ...except Novice Merchant, which is free
 }
 
 # Skill (box) name -> commands appended to its COMMANDS list. Learning the box grants the command (server) and the
