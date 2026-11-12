@@ -54,6 +54,8 @@ class CityManager extends ManagedService implements Logger {
 	public transient static int trainersPerRank;
 	public transient static int missionTerminalsPerRank;
 	public transient static float maintenanceDiscount;
+	public transient static byte newCityRank;
+	public transient static byte specializationMinRank;
 
 	@dereferenced
 	private transient VectorMap<string, CityRegion> cities;
@@ -255,6 +257,14 @@ class CityManager extends ManagedService implements Logger {
 
 	@local
 	public native final CitySpecializationMap getCitySpecializations();
+
+	public native int getSpecializationMinRank(final string cityspec);
+
+	/**
+	 * Drops the city's specialization if its rank no longer meets the spec's minimum rank.
+	 * @pre city locked
+	 */
+	public native void validateCitySpecializationRank(CityRegion city);
 
 	@local
 	public native final CityTax getCityTax(int idx);

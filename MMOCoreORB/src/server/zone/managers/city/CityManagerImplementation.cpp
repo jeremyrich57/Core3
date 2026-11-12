@@ -61,6 +61,8 @@ int CityManagerImplementation::decorationsPerRank = 10;
 int CityManagerImplementation::trainersPerRank = 3;
 int CityManagerImplementation::missionTerminalsPerRank = 3;
 float CityManagerImplementation::maintenanceDiscount = 1.0f;
+byte CityManagerImplementation::newCityRank = 1;
+byte CityManagerImplementation::specializationMinRank = 3;
 
 void CityManagerImplementation::loadLuaConfig() {
 	info("Loading configuration file.", true);
@@ -128,6 +130,13 @@ void CityManagerImplementation::loadLuaConfig() {
 	trainersPerRank = lua->getGlobalInt("TrainersPerRank");
 	missionTerminalsPerRank = lua->getGlobalInt("MissionTerminalsPerRank");
 	maintenanceDiscount = lua->getGlobalFloat("maintenanceDiscount");
+
+	// Missing keys read as 0 and keep the stock behavior (start at Outpost, specializations at Township).
+	int luaNewCityRank = lua->getGlobalInt("NewCityRank");
+	int luaSpecMinRank = lua->getGlobalInt("SpecializationMinRank");
+
+	newCityRank = luaNewCityRank > 0 ? Math::clamp(1, luaNewCityRank, 5) : 1;
+	specializationMinRank = luaSpecMinRank > 0 ? Math::clamp(1, luaSpecMinRank, 5) : 3;
 
 	luaObject = lua->getGlobalObject("CitizensPerRank");
 
@@ -206,9 +215,9 @@ CityRegion* CityManagerImplementation::createCity(CreatureObject* mayor, const S
 
 	city->setCustomRegionName(cityName);
 	city->setZone(mayor->getZone());
-	city->setCityRank(OUTPOST);
+	city->setCityRank(newCityRank);
 	city->setMayorID(mayor->getObjectID());
-	Region* region = city->createNewRegion(x, y, radiusPerRank.get(OUTPOST - 1), true);
+	Region* region = city->createNewRegion(x, y, radiusPerRank.get(newCityRank - 1), true);
 
 	city->resetVotingPeriod();
 	city->setAssessmentPending(true);
@@ -803,6 +812,8 @@ void CityManagerImplementation::processCityUpdate(CityRegion* city) {
 			}
 		}
 
+		validateCitySpecializationRank(city);
+
 		city->rescheduleUpdateEvent((cityUpdateInterval + System::random(30)) * 60);
 
 		// Rank updates can tick faster than maintenance; tax and upkeep only run when the maintenance clock is due.
@@ -1270,15 +1281,18 @@ void CityManagerImplementation::contractCity(CityRegion* city) {
 	bool startedAssessment = false;
 
 	if (city->getCitizenCount() < citizensPerRank.get(0)) {
-		newRank = OUTPOST;
+		newRank = newCityRank;
 		startedAssessment = true;
 		city->setAssessmentPending(true);
 		city->scheduleCitizenAssessment(oldCityGracePeriod * 60);
 	}
 
-	if (newRank < TOWNSHIP) {
-		city->setCitySpecialization("");
+	// Cities never shrink below the rank new cities start at.
+	if (newRank < newCityRank)
+		newRank = newCityRank;
 
+	// Specialization is checked against its minimum rank in processCityUpdate (validateCitySpecializationRank).
+	if (newRank < TOWNSHIP) {
 		if (city->isRegistered())
 			unregisterCity(city, nullptr);
 	}
@@ -2301,6 +2315,42 @@ void CityManagerImplementation::unregisterFromMayoralRace(CityRegion* city, Crea
 
 const CitySpecializationMap* CityManagerImplementation::getCitySpecializations() {
 	return &citySpecializations;
+}
+
+int CityManagerImplementation::getSpecializationMinRank(const String& cityspec) {
+	const CitySpecialization* spec = getCitySpecialization(cityspec);
+
+	if (spec != nullptr && spec->getMinRank() > 0)
+		return spec->getMinRank();
+
+	return specializationMinRank;
+}
+
+void CityManagerImplementation::validateCitySpecializationRank(CityRegion* city) {
+	const String spec = city->getCitySpecialization();
+
+	if (spec.isEmpty())
+		return;
+
+	int minRank = getSpecializationMinRank(spec);
+
+	if (city->getCityRank() >= minRank)
+		return;
+
+	city->setCitySpecialization("");
+	// Reset the region to remove specialization modifiers from players
+	city->setRadius(city->getRadius());
+
+	ManagedReference<CreatureObject*> mayor = zoneServer->getObject(city->getMayorID()).castTo<CreatureObject*>();
+
+	if (mayor != nullptr) {
+		const char* rankNames[] = {"", "Outpost", "Village", "Township", "City", "Metropolis"};
+
+		UnicodeString subject = "City Specialization Removed";
+		UnicodeString message = "The specialization of " + city->getCityRegionName() + " has been removed because the city is no longer rank " + String::valueOf(minRank) + " (" + rankNames[Math::clamp(0, minRank, 5)] + ").";
+
+		zoneServer->getChatManager()->sendMail("@city/city:new_city_from", subject, message, mayor->getFirstName());
+	}
 }
 
 const CitySpecialization* CityManagerImplementation::getCitySpecialization(const String& name) {
