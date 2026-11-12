@@ -90,6 +90,8 @@ object_tangible_wearables_armor_padded_armor_padded_s01_bicep_l = object_tangibl
 	-- Damage types in WeaponObject
 	vulnerability = HEAT + ACID + STUN + LIGHTSABER,
 
+	specialResists = BLAST + COLD,
+
 	-- These are default Blue Frog stats
 	healthEncumbrance = 1,
 	actionEncumbrance = 1,
@@ -114,7 +116,7 @@ object_tangible_wearables_armor_padded_armor_padded_s01_bicep_l = object_tangibl
 	experimentalGroupTitles = {"null", "null", "null", "exp_durability", "exp_quality", "exp_durability", "exp_durability", "exp_durability", "exp_durability", "null", "null", "exp_resistance", "null"},
 	experimentalSubGroupTitles = {"null", "null", "sockets", "hit_points", "armor_effectiveness", "armor_integrity", "armor_health_encumbrance", "armor_action_encumbrance", "armor_mind_encumbrance", "armor_rating", "armor_special_type", "armor_special_effectiveness", "armor_special_integrity"},
 	experimentalMin = {0, 0, 0, 1000, 1, 18750, 17, 22, 23, 1, 4, 1, 18750},
-	experimentalMax = {0, 0, 0, 1000, 30, 31250, 10, 13, 14, 1, 4, 40, 31250},
+	experimentalMax = {0, 0, 0, 1000, 63, 31250, 10, 13, 14, 1, 4, 40, 31250},
 	experimentalPrecision = {0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 4, 1, 1, 1, 1, 1, 1, 4, 4, 4, 1},
 }

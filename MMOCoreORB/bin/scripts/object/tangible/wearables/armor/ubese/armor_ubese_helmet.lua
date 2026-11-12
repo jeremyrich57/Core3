@@ -83,6 +83,8 @@ object_tangible_wearables_armor_ubese_armor_ubese_helmet = object_tangible_weara
 	-- Damage types in WeaponObject
 	vulnerability = HEAT + COLD + STUN + LIGHTSABER,
 
+	specialResists = KINETIC + ELECTRICITY,
+
 	-- These are default Blue Frog stats
 	healthEncumbrance = 1,
 	actionEncumbrance = 1,
@@ -107,7 +109,7 @@ object_tangible_wearables_armor_ubese_armor_ubese_helmet = object_tangible_weara
 	experimentalGroupTitles = {"null", "null", "null", "exp_durability", "exp_quality", "exp_durability", "exp_durability", "exp_durability", "exp_durability", "null", "null", "exp_resistance", "null"},
 	experimentalSubGroupTitles = {"null", "null", "sockets", "hit_points", "armor_effectiveness", "armor_integrity", "armor_health_encumbrance", "armor_action_encumbrance", "armor_mind_encumbrance", "armor_rating", "armor_special_type", "armor_special_effectiveness", "armor_special_integrity"},
 	experimentalMin = {0, 0, 0, 1000, 1, 15000, 11, 14, 225, 1, 1, 1, 18750},
-	experimentalMax = {0, 0, 0, 1000, 30, 25000, 7, 8, 135, 1, 1, 40, 31250},
+	experimentalMax = {0, 0, 0, 1000, 55, 25000, 7, 8, 135, 1, 1, 40, 31250},
 	experimentalPrecision = {0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0},
 	experimentalCombineType = {0, 0, 4, 1, 1, 1, 1, 1, 1, 4, 4, 4, 1},
 }

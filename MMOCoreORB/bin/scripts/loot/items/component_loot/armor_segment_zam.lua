@@ -11,7 +11,7 @@ armor_segment_zam = {
 		{"armor_action_encumbrance",8,1,0},
 		{"armor_mind_encumbrance",4,1,0},
 		{"armor_rating",1,1,0, true},
-		{"armor_special_type",32,32,0, true},
+		{"armor_special_type",160,160,0, true},
 		{"armor_special_effectiveness",3,7,0},
 		{"armor_special_integrity",100,100,0, true},
 		{"useCount",1,11,0},

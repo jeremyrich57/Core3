@@ -11,7 +11,7 @@ armor_segment_kashyyykian_ceremonial = {
 		{"armor_action_encumbrance",16,1,0},
 		{"armor_mind_encumbrance",13,1,0},
 		{"armor_rating",1,1,0, true},
-		{"armor_special_type",1,1,0, true},
+		{"armor_special_type",257,257,0, true},
 		{"armor_special_effectiveness",5,10,0},
 		{"armor_special_integrity",100,100,0, true},
 		{"useCount",1,11,0},

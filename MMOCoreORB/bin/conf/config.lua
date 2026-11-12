@@ -244,6 +244,14 @@ Core3 = {
 		CharacterCreationCooldown = 60, -- Minutes an account must wait between character creations (staff exempt); 0 = no limit
 	},
 
+	------Armor Config------
+	Armor = {
+		MaxBaseResist = 60, -- Cap on base (non-special) resists
+		MaxSlicedResist = 75, -- Cap on base resists for effectiveness-sliced armor
+		MaxSpecialResist = 80, -- Cap on an armor family's own special resists (slicing does not apply)
+		MaxStunLayerResist = 40, -- Cap on stun resist granted by a stun layer (stun is vulnerable on all armor)
+	},
+
 	------Extra Config ------
 	MaxNavMeshJobs = 6,
 	MaxAuctionSearchJobs = 1,
