@@ -45,11 +45,28 @@
 --                 animation = e.g. wave_greeting, wave_hail, bow, salute1, optional
 --                 range     = meters, default 12
 
--- Padded armor: +25 to every resist via armorBonus, then these set to a flat value
-local paddedResists = { kinetic = 45, blast = 52 }
+-- Armor resists follow each family's profile (see the wearable templates and Core3.Armor in
+-- config.lua) at about half of what crafted armor can reach: base resists 30 (crafted cap 60),
+-- the family's own specials 40 (crafted cap 80), vulnerabilities 0. Every type is listed so
+-- nothing left over from the loot roll leaks through.
+local function armorResists(base, special, vulnerable)
+	local resists = {}
 
--- Bone armor: flat resists, these replace whatever the loot values give
-local boneResists = { kinetic = 25, energy = 52, electricity = 44, heat = 33, acid = 33 }
+	for _, name in ipairs(base) do resists[name] = 30 end
+	for _, name in ipairs(special) do resists[name] = 40 end
+	for _, name in ipairs(vulnerable) do resists[name] = 0 end
+
+	return resists
+end
+
+-- Padded (and Ithorian Defender, same profile): blast/cold special; heat/acid vulnerable
+local paddedResists = armorResists({ "kinetic", "energy", "electricity" }, { "blast", "cold" }, { "heat", "acid", "stun", "lightsaber" })
+
+-- Bone: energy special; blast/cold vulnerable
+local boneResists = armorResists({ "kinetic", "electricity", "heat", "acid" }, { "energy" }, { "blast", "cold", "stun", "lightsaber" })
+
+-- Kashyyykian Ceremonial (Wookiee): kinetic/electricity special; heat/cold vulnerable
+local ceremonialResists = armorResists({ "energy", "blast", "acid" }, { "kinetic", "electricity" }, { "heat", "cold", "stun", "lightsaber" })
 
 -- Theed stall (upscale): rug, a long counter with goods on top, elegant furniture and a Naboo
 -- banner behind the vendor and lamps either side.
@@ -102,15 +119,15 @@ systemVendors = {
 
 		stock = {
 			-- Padded armor
-			{ loot = "padded_armor_chest_plate", price = 4000, armorBonus = 25, resists = paddedResists },
-			{ loot = "padded_armor_leggings", price = 3000, armorBonus = 25, resists = paddedResists },
-			{ loot = "padded_armor_helmet", price = 2500, armorBonus = 25, resists = paddedResists },
-			{ loot = "padded_armor_boots", price = 1500, armorBonus = 25, resists = paddedResists },
-			{ loot = "padded_armor_gloves", price = 1500, armorBonus = 25, resists = paddedResists },
-			{ loot = "padded_armor_bicep_l", price = 1500, armorBonus = 25, resists = paddedResists },
-			{ loot = "padded_armor_bicep_r", price = 1500, armorBonus = 25, resists = paddedResists },
-			{ loot = "padded_armor_bracer_l", price = 1500, armorBonus = 25, resists = paddedResists },
-			{ loot = "padded_armor_bracer_r", price = 1500, armorBonus = 25, resists = paddedResists },
+			{ loot = "padded_armor_chest_plate", price = 4000, resists = paddedResists },
+			{ loot = "padded_armor_leggings", price = 3000, resists = paddedResists },
+			{ loot = "padded_armor_helmet", price = 2500, resists = paddedResists },
+			{ loot = "padded_armor_boots", price = 1500, resists = paddedResists },
+			{ loot = "padded_armor_gloves", price = 1500, resists = paddedResists },
+			{ loot = "padded_armor_bicep_l", price = 1500, resists = paddedResists },
+			{ loot = "padded_armor_bicep_r", price = 1500, resists = paddedResists },
+			{ loot = "padded_armor_bracer_l", price = 1500, resists = paddedResists },
+			{ loot = "padded_armor_bracer_r", price = 1500, resists = paddedResists },
 			{ loot = "padded_armor_belt", price = 1000 },
 
 			-- Bone armor
@@ -123,6 +140,23 @@ systemVendors = {
 			{ loot = "bone_armor_bicep_r", price = 1250, resists = boneResists },
 			{ loot = "bone_armor_bracer_l", price = 1250, resists = boneResists },
 			{ loot = "bone_armor_bracer_r", price = 1250, resists = boneResists },
+
+			-- Ithorian Defender armor (Ithorians only)
+			{ loot = "ithorian_defender_armor_chest_plate", price = 4000, resists = paddedResists },
+			{ loot = "ithorian_defender_armor_leggings", price = 3000, resists = paddedResists },
+			{ loot = "ithorian_defender_armor_helmet", price = 2500, resists = paddedResists },
+			{ loot = "ithorian_defender_armor_boots", price = 1500, resists = paddedResists },
+			{ loot = "ithorian_defender_armor_gloves", price = 1500, resists = paddedResists },
+			{ loot = "ithorian_defender_armor_bicep_l", price = 1500, resists = paddedResists },
+			{ loot = "ithorian_defender_armor_bicep_r", price = 1500, resists = paddedResists },
+			{ loot = "ithorian_defender_armor_bracer_l", price = 1500, resists = paddedResists },
+			{ loot = "ithorian_defender_armor_bracer_r", price = 1500, resists = paddedResists },
+
+			-- Kashyyykian Ceremonial armor (Wookiees only)
+			{ loot = "kashyyykian_ceremonial_armor_chest_plate", price = 4000, resists = ceremonialResists },
+			{ loot = "kashyyykian_ceremonial_armor_leggings", price = 3000, resists = ceremonialResists },
+			{ loot = "kashyyykian_ceremonial_armor_bracer_l", price = 1500, resists = ceremonialResists },
+			{ loot = "kashyyykian_ceremonial_armor_bracer_r", price = 1500, resists = ceremonialResists },
 
 			-- Weapons
 			{ loot = "pistol_d18", price = 2000 },
