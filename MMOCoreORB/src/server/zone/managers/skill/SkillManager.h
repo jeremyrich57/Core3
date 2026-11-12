@@ -85,6 +85,37 @@ public:
 	void surrenderAllSkills(CreatureObject* creature, bool notifyClient = true, bool removeForceProgression = true, bool removePilot = false);
 
 	/**
+	 * Collects the skill and every skill the creature has that depends on it (directly or indirectly), in an order
+	 * they can be surrendered one by one (dependents first, the skill itself last).
+	 */
+	void getSurrenderCascade(CreatureObject* creature, Skill* skill, Vector<Skill*>& cascade) const;
+
+	/**
+	 * Whether a cascade can be surrendered through the multi-skill surrender. Force and pilot skills have their own
+	 * rules, so they can only be dropped one at a time.
+	 */
+	bool canSurrenderCascade(const Vector<Skill*>& cascade) const;
+
+	/**
+	 * Handles /surrenderSkill. Without arguments it opens a list of the player's skills to pick from. A skill that
+	 * nothing depends on is surrendered right away (the client skill window already confirmed it); otherwise the
+	 * player is asked to confirm surrendering it together with everything that depends on it.
+	 */
+	void handleSurrenderSkillCommand(CreatureObject* creature, const String& skillName);
+
+	void sendSurrenderSkillList(CreatureObject* creature);
+	void sendSurrenderSkillConfirm(CreatureObject* creature, const String& skillName);
+
+	/**
+	 * Surrenders the skill and every skill that depends on it.
+	 * @return the number of skills surrendered.
+	 */
+	int surrenderSkillCascade(const String& skillName, CreatureObject* creature);
+
+	String getSkillDisplayName(Skill* skill) const;
+	Skill* getSkillProfession(Skill* skill) const;
+
+	/**
 	 * Checks if the player can learn the skill (fulfills skill prerequisites, enough skill points and enough XP).
 	 * @param skillName the name of the skill to check if the player can learn.
 	 * @param creature the player creature.

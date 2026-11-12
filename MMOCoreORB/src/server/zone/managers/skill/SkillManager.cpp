@@ -22,6 +22,9 @@
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/zone/objects/player/sui/messagebox/SuiMessageBox.h"
 #include "server/zone/objects/player/sui/callbacks/SurrenderPilotSuiCallback.h"
+#include "server/zone/objects/player/sui/callbacks/SurrenderSkillSuiCallback.h"
+#include "server/zone/objects/player/sui/listbox/SuiListBox.h"
+#include "server/zone/managers/stringid/StringIdManager.h"
 #include "templates/faction/Factions.h"
 
 SkillManager::SkillManager()
@@ -690,6 +693,258 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 	JediManager::instance()->onSkillRevoked(creature, skill);
 
 	return true;
+}
+
+void SkillManager::getSurrenderCascade(CreatureObject* creature, Skill* skill, Vector<Skill*>& cascade) const {
+	if (creature == nullptr || skill == nullptr || cascade.contains(skill)) {
+		return;
+	}
+
+	const SkillList* skillList = creature->getSkillList();
+
+	for (int i = 0; i < skillList->size(); ++i) {
+		Skill* checkSkill = skillList->get(i);
+
+		// checkSkill lists skill as one of its requirements
+		if (checkSkill != nullptr && checkSkill->isRequiredSkillOf(skill)) {
+			getSurrenderCascade(creature, checkSkill, cascade);
+		}
+	}
+
+	if (!cascade.contains(skill)) {
+		cascade.add(skill);
+	}
+}
+
+bool SkillManager::canSurrenderCascade(const Vector<Skill*>& cascade) const {
+	for (int i = 0; i < cascade.size(); ++i) {
+		const String& name = cascade.get(i)->getSkillName();
+
+		if (name.beginsWith("social_language_")) {
+			return false;
+		}
+
+		if (!name.beginsWith("combat_") && !name.beginsWith("crafting_") && !name.beginsWith("outdoors_") && !name.beginsWith("science_") && !name.beginsWith("social_")) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+Skill* SkillManager::getSkillProfession(Skill* skill) const {
+	// Branch boxes chain to each other (rifle_02 -> rifle_01 -> combat_marksman), so walk up to the profession.
+	for (Skill* node = skill != nullptr ? skill->getParent() : nullptr; node != nullptr; node = node->getParent()) {
+		if (node->isSkill()) {
+			return node;
+		}
+	}
+
+	return nullptr;
+}
+
+String SkillManager::getSkillDisplayName(Skill* skill) const {
+	if (skill == nullptr) {
+		return "";
+	}
+
+	String key = "@skl_n:" + skill->getSkillName();
+	String name = StringIdManager::instance()->getStringId(key.hashCode()).toString();
+
+	return name.isEmpty() ? skill->getSkillName() : name;
+}
+
+void SkillManager::handleSurrenderSkillCommand(CreatureObject* creature, const String& skillName) {
+	if (creature == nullptr) {
+		return;
+	}
+
+	if (skillName.isEmpty()) {
+		sendSurrenderSkillList(creature);
+		return;
+	}
+
+	Skill* skill = getSkill(skillName);
+
+	if (skill != nullptr && creature->hasSkill(skillName)) {
+		Vector<Skill*> cascade;
+		getSurrenderCascade(creature, skill, cascade);
+
+		if (cascade.size() > 1) {
+			sendSurrenderSkillConfirm(creature, skillName);
+			return;
+		}
+	}
+
+	// Nothing depends on it: the client skill window already asked the player to confirm.
+	surrenderSkill(skillName, creature, true);
+}
+
+void SkillManager::sendSurrenderSkillList(CreatureObject* creature) {
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+
+	if (ghost == nullptr) {
+		return;
+	}
+
+	// Sorted by profession, then novice, the branch boxes and master.
+	VectorMap<String, Skill*> sorted;
+	sorted.setNoDuplicateInsertPlan();
+
+	const SkillList* skillList = creature->getSkillList();
+
+	for (int i = 0; i < skillList->size(); ++i) {
+		Skill* skill = skillList->get(i);
+
+		if (skill == nullptr) {
+			continue;
+		}
+
+		Vector<Skill*> cascade;
+		getSurrenderCascade(creature, skill, cascade);
+
+		if (!canSurrenderCascade(cascade)) {
+			continue;
+		}
+
+		const String& name = skill->getSkillName();
+		String rank = name.endsWith("_novice") ? "0" : (name.endsWith("_master") ? "2" : "1");
+
+		Skill* profession = getSkillProfession(skill);
+		String group = profession != nullptr ? profession->getSkillName() : skill->getParentName();
+
+		sorted.put(group + "|" + rank + "|" + name, skill);
+	}
+
+	if (sorted.size() == 0) {
+		creature->sendSystemMessage("You have no skills that can be surrendered here.");
+		return;
+	}
+
+	ghost->closeSuiWindowType(SuiWindowType::SURRENDER_SKILL_SELECT);
+	ghost->closeSuiWindowType(SuiWindowType::SURRENDER_SKILL_CONFIRM);
+
+	ManagedReference<SuiListBox*> listBox = new SuiListBox(creature, SuiWindowType::SURRENDER_SKILL_SELECT, SuiListBox::HANDLETWOBUTTON);
+	listBox->setCallback(new SurrenderSkillSelectSuiCallback(creature->getZoneServer()));
+	listBox->setPromptTitle("@ui_skl:surrender"); // "Surrender Skill"
+	listBox->setPromptText("Select a skill to surrender. Any skills that depend on it will be surrendered as well, and you will be asked to confirm.");
+	listBox->setOkButton(true, "@ui_skl:surrender");
+	listBox->setCancelButton(true, "@cancel");
+
+	for (int i = 0; i < sorted.size(); ++i) {
+		Skill* skill = sorted.elementAt(i).getValue();
+		Skill* profession = getSkillProfession(skill);
+
+		String text = getSkillDisplayName(skill);
+
+		if (profession != nullptr) {
+			text = getSkillDisplayName(profession) + " - " + text;
+		}
+
+		listBox->addMenuItem(text, skill->getSkillName().hashCode());
+	}
+
+	listBox->setUsingObject(creature);
+
+	ghost->addSuiBox(listBox);
+	creature->sendMessage(listBox->generateMessage());
+}
+
+void SkillManager::sendSurrenderSkillConfirm(CreatureObject* creature, const String& skillName) {
+	ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+	Skill* skill = getSkill(skillName);
+
+	if (ghost == nullptr || skill == nullptr || !creature->hasSkill(skillName)) {
+		return;
+	}
+
+	Vector<Skill*> cascade;
+	getSurrenderCascade(creature, skill, cascade);
+
+	if (!canSurrenderCascade(cascade)) {
+		creature->sendSystemMessage("Force, pilot and language skills can't be surrendered along with other skills. Surrender them one at a time from the Skills window.");
+		return;
+	}
+
+	int points = 0;
+
+	for (int i = 0; i < cascade.size(); ++i) {
+		points += cascade.get(i)->getSkillPointsRequired();
+	}
+
+	ghost->closeSuiWindowType(SuiWindowType::SURRENDER_SKILL_CONFIRM);
+
+	StringBuffer prompt;
+
+	if (cascade.size() > 1) {
+		prompt << "Surrendering " << getSkillDisplayName(skill) << " will also surrender every skill that depends on it.\n\n"
+			<< "The following " << cascade.size() << " skills will be surrendered";
+	} else {
+		prompt << "The following skill will be surrendered";
+	}
+
+	prompt << ", recovering " << points << " skill points:";
+
+	ManagedReference<SuiListBox*> confirmBox = new SuiListBox(creature, SuiWindowType::SURRENDER_SKILL_CONFIRM, SuiListBox::HANDLETWOBUTTON);
+	confirmBox->setCallback(new SurrenderSkillConfirmSuiCallback(creature->getZoneServer(), skillName));
+	confirmBox->setPromptTitle("@ui_skl:surrender"); // "Surrender Skill"
+	confirmBox->setPromptText(prompt.toString());
+	confirmBox->setOkButton(true, "@yes");
+	confirmBox->setCancelButton(true, "@no");
+
+	// Listed in the order they are learned (the reverse of the surrender order).
+	for (int i = cascade.size() - 1; i >= 0; --i) {
+		Skill* entry = cascade.get(i);
+
+		confirmBox->addMenuItem(getSkillDisplayName(entry), entry->getSkillName().hashCode());
+	}
+
+	confirmBox->setUsingObject(creature);
+
+	ghost->addSuiBox(confirmBox);
+	creature->sendMessage(confirmBox->generateMessage());
+}
+
+int SkillManager::surrenderSkillCascade(const String& skillName, CreatureObject* creature) {
+	Skill* skill = getSkill(skillName);
+
+	if (creature == nullptr || skill == nullptr) {
+		return 0;
+	}
+
+	Locker locker(creature);
+
+	if (!creature->hasSkill(skillName)) {
+		return 0;
+	}
+
+	// Recomputed: the player's skills may have changed while the confirmation was open.
+	Vector<Skill*> cascade;
+	getSurrenderCascade(creature, skill, cascade);
+
+	if (!canSurrenderCascade(cascade)) {
+		creature->sendSystemMessage("Force, pilot and language skills can't be surrendered along with other skills. Surrender them one at a time from the Skills window.");
+		return 0;
+	}
+
+	int surrendered = 0;
+
+	for (int i = 0; i < cascade.size(); ++i) {
+		Skill* entry = cascade.get(i);
+
+		if (!surrenderSkill(entry->getSkillName(), creature, true) || creature->hasSkill(entry->getSkillName())) {
+			creature->sendSystemMessage("Unable to surrender " + getSkillDisplayName(entry) + ". Stopped after surrendering " + String::valueOf(surrendered) + " skills.");
+			return surrendered;
+		}
+
+		++surrendered;
+	}
+
+	if (surrendered > 1) {
+		creature->sendSystemMessage("You surrendered " + String::valueOf(surrendered) + " skills.");
+	}
+
+	return surrendered;
 }
 
 void SkillManager::surrenderAllSkills(CreatureObject* creature, bool notifyClient, bool removeForceProgression, bool removePilot) {
