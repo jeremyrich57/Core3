@@ -35,6 +35,12 @@ public:
 		if (playerManager == nullptr)
 			return GENERALERROR;
 
+		if (!playerManager->isVeteranRewardsEnabled()) {
+			player->sendSystemMessage("Veteran rewards are currently disabled.");
+			player->sendSystemMessage(ghost->getPlayedTimeString(true));
+			return SUCCESS;
+		}
+
 		// Get account
 		ManagedReference<Account*> account = ghost->getAccount();
 
