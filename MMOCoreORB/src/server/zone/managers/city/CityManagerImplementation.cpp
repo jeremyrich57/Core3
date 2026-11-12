@@ -2299,6 +2299,10 @@ void CityManagerImplementation::unregisterFromMayoralRace(CityRegion* city, Crea
 	sendMail(city, "@city/city:new_city_from", "@city/city:unregistered_citizen_email_subject", params, nullptr); // Candidate exited the race!
 }
 
+const CitySpecializationMap* CityManagerImplementation::getCitySpecializations() {
+	return &citySpecializations;
+}
+
 const CitySpecialization* CityManagerImplementation::getCitySpecialization(const String& name) {
 	if (!citySpecializations.containsKey(name))
 		return nullptr;

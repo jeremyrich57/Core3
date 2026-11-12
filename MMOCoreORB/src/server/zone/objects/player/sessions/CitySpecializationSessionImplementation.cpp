@@ -51,12 +51,41 @@ int CitySpecializationSessionImplementation::initializeSession() {
 	}
 
 	if (abilityList != nullptr) {
+		SortedVector<String> specAbilities;
+
 		for (int i = 0; i < abilityList->size(); ++i) {
 			Reference<const Ability*> ability = abilityList->getSafe(i);
 			const String& abilityName = ability->getAbilityName();
 
-			if (abilityName.beginsWith("city_spec"))
+			if (abilityName.beginsWith("city_spec")) {
 				sui->addMenuItem("@city/city:" + abilityName);
+				specAbilities.put(abilityName);
+			}
+		}
+
+		// Upgrade specializations combine stock ones and unlock once the mayor has every component spec.
+		CityManager* cityManager = creatureObject->getZoneServer()->getCityManager();
+		const CitySpecializationMap* specs = cityManager->getCitySpecializations();
+		const Vector<String>* specNames = specs->getNames();
+
+		for (int i = 0; i < specNames->size(); ++i) {
+			const CitySpecialization* spec = cityManager->getCitySpecialization(specNames->get(i));
+
+			if (spec == nullptr || !spec->isUpgrade())
+				continue;
+
+			const Vector<String>* required = spec->getRequiredAbilities();
+			bool hasAll = true;
+
+			for (int j = 0; j < required->size(); ++j) {
+				if (!specAbilities.contains(required->get(j))) {
+					hasAll = false;
+					break;
+				}
+			}
+
+			if (hasAll)
+				sui->addMenuItem(spec->getName());
 		}
 	}
 
@@ -104,7 +133,19 @@ int CitySpecializationSessionImplementation::sendConfirmationBox(const String& c
 		confirm->setPromptText(choice + "_d");
 		specialization = "";
 	} else {
-		confirm->setPromptText(choice + "_d\n\n@city/city:confirm_spec_d");
+		const CitySpecialization* spec = creatureObject->getZoneServer()->getCityManager()->getCitySpecialization(choice);
+
+		if (spec == nullptr) {
+			return cancelSession();
+		}
+
+		const String& description = spec->getDescription();
+
+		if (description.isEmpty())
+			confirm->setPromptText(choice + "_d\n\n@city/city:confirm_spec_d");
+		else
+			confirm->setPromptText(description + "\n\n@city/city:confirm_spec_d");
+
 		specialization = choice;
 	}
 	confirm->setOkButton(true, "@yes");
