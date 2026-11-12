@@ -77,8 +77,15 @@ OldCityGracePeriod = 4320
 EnableCityWarn = false
 
 --The number of citizens required to achieve each city rank. (Outpost, Village, Township, City, Metropolis)
-CitizensPerRank = {2, 4, 6, 8, 10}
+--Outpost is skipped (see NewCityRank), so its entry should match Village's.
+CitizensPerRank = {1, 1, 2, 3, 5}
 --CitizensPerRank = {10, 20, 35, 55, 85}
+
+--The rank a newly placed city starts at, and the lowest rank a city can contract to. 2 = Village (skips Outpost).
+NewCityRank = 2
+
+--The minimum city rank to set a specialization, unless the specialization sets its own minRank. 4 = City.
+SpecializationMinRank = 4
 
 --The radius in meters of the city at each city rank. (Outpost, Village, Township, City, Metropolis)
 RadiusPerRank = {150, 200, 300, 400, 450}
@@ -250,10 +257,11 @@ CitySpecializations = {
 		UPGRADE SPECIALIZATIONS
 		Combine stock specializations. Offered to a mayor who has every ability in 'requires'
 		(granted by Politician boxes). 'description' is shown on the confirmation window.
-		Cost is the sum of the components plus ~10%.
+		Cost is the sum of the components plus ~10%. minRank 5 = Metropolis.
 	--]]
 	{--Industrial Center: Manufacturing Center + Research Center
 		name = "Industrial Center",
+		minRank = 5,
 		description = "Combines the Manufacturing Center and Research Center specializations: +10 assembly and +15 experimentation for crafters in the city.",
 		cost = 95000,
 		requires = {"city_spec_industry", "city_spec_research"},
@@ -264,6 +272,7 @@ CitySpecializations = {
 	},
 	{--Wellness Center: Medical Center + Entertainment District
 		name = "Wellness Center",
+		minRank = 5,
 		description = "Combines the Medical Center and Entertainment District specializations: +10 medical rating for healers, and +10% performance experience and faster patron buffs for entertainers in the city.",
 		cost = 90000,
 		requires = {"city_spec_doctor", "city_spec_entertainer"},
@@ -274,6 +283,7 @@ CitySpecializations = {
 	},
 	{--Sanctuary: Stronghold + Medical Center + Clone Lab
 		name = "Sanctuary",
+		minRank = 5,
 		description = "Combines the Stronghold, Medical Center and Clone Lab specializations: +90 defense for city militia, +10 medical rating for healers, and 50% less cloning wounds and equipment decay at the city's cloning facilities.",
 		cost = 170000,
 		requires = {"city_spec_stronghold", "city_spec_doctor", "city_spec_cloning"},
@@ -285,6 +295,7 @@ CitySpecializations = {
 	},
 	{--Business District: Sample Rich + Improved Job Market
 		name = "Business District",
+		minRank = 5,
 		description = "Combines the Sample Rich and Improved Job Market specializations: +20% sample size and better sampling for surveyors, and +15% mission rewards in the city.",
 		cost = 85000,
 		requires = {"city_spec_sample_rich", "city_spec_missions"},

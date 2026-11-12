@@ -111,8 +111,11 @@ int CitySpecializationSessionImplementation::sendConfirmationBox(const String& c
 		return cancelSession();
 
 	if (choice != "@city/city:null") {
-		if (cityRegion->getCityRank() < CityRegion::RANK_TOWNSHIP) {
-			creatureObject->sendSystemMessage("@city/city:no_rank_spec"); //Your city must be at least rank 3 before you can set a specialization
+		int minRank = creatureObject->getZoneServer()->getCityManager()->getSpecializationMinRank(choice);
+
+		if (cityRegion->getCityRank() < minRank) {
+			const char* rankNames[] = {"", "Outpost", "Village", "Township", "City", "Metropolis"};
+			creatureObject->sendSystemMessage("Your city must be at least rank " + String::valueOf(minRank) + " (" + rankNames[Math::clamp(0, minRank, 5)] + ") to use this specialization.");
 			return cancelSession();
 		}
 
