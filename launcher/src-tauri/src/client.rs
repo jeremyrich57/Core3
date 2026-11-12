@@ -19,6 +19,9 @@ const CLIENT_FILES: &str = include_str!("../resources/client_files.txt");
 /// Copied from the source install on first install if present; the client edits options.cfg itself.
 const SEED_CONFIGS: &[&str] = &["swgemu_preload.cfg", "options.cfg"];
 
+/// Optional user overrides in the game folder, included last when present. Never written by the launcher.
+const USER_CONFIG: &str = "user.cfg";
+
 /// Stock TRE search order from SWGEmu's swgemu_live.cfg (key, file). Higher priority wins.
 const STOCK_SEARCH_TREES: &[(&str, &str)] = &[
     ("searchTree_00_25", "default_patch.tre"),
@@ -196,6 +199,10 @@ pub fn write_config(
 
     let mut includes = vec!["swgemu_login.cfg", "swgemu_live.cfg"];
     includes.extend(SEED_CONFIGS.iter().filter(|f| game.join(f).is_file()));
+    // Hand-edited local overrides (e.g. "[ClientGame] 0fd345d9=true" to enable admin commands)
+    if game.join(USER_CONFIG).is_file() {
+        includes.push(USER_CONFIG);
+    }
     write(
         "swgemu.cfg",
         includes.iter().map(|f| format!(".include \"{f}\"\n")).collect(),
