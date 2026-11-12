@@ -25,7 +25,7 @@ public:
 			return GENERALERROR;
 		}
 
-		skillManager->surrenderSkill(arguments.toString(), creature, true);
+		skillManager->handleSurrenderSkillCommand(creature, arguments.toString().trim());
 
 		return SUCCESS;
 	}
