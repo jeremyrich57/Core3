@@ -62,7 +62,7 @@ object_draft_schematic_vehicle_civilian_barc_speeder = object_draft_schematic_ve
 
 	ingredientTemplateNames = {"craft_vehicle_ingredients_n", "craft_vehicle_ingredients_n", "craft_item_ingredients_n"},
 	ingredientTitleNames = {"vehicle_body", "structural_frame", "power_plant"},
-	ingredientSlotType = {0, 0, 1},
+	ingredientSlotType = {0, 0, 2}, -- power plant slot is mixed so multi-use power plant stacks fit
 	resourceTypes = {"metal_nonferrous", "metal_ferrous", "object/tangible/component/vehicle/shared_veh_power_plant.iff"},
 	resourceQuantities = {1125, 3125, 1},
 	contribution = {100, 100, 100},
